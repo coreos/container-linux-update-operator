@@ -1,0 +1,46 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: klocksmith
+spec:
+  template:
+    metadata:
+      labels:
+        app: klocksmith
+    spec:
+      containers:
+      - name: klocksmith
+        image: quay.io/coreos/klocksmith:dev
+        imagePullPolicy: Always
+        volumeMounts:
+          - mountPath: /var/run/dbus
+            name: var-run-dbus
+        env:
+        # read by klocksmith as the node name to manage reboots for
+        - name: KLOCKSMITH_NODE
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+      volumes:
+      - name: var-run-dbus
+        hostPath:
+          path: /var/run/dbus
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: klocksmith-controller
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: klocksmith-controller
+    spec:
+      containers:
+      - name: klocksmith-controller
+        image: quay.io/coreos/klocksmith:dev
+        imagePullPolicy: Always
+        command:
+        - "/bin/kontroller"
+
