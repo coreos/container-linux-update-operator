@@ -14,9 +14,8 @@ import (
 	"k8s.io/client-go/1.4/pkg/fields"
 	"k8s.io/client-go/1.4/pkg/watch"
 
-	"github.com/coreos/klocksmith/internal/drain"
-	"github.com/coreos/klocksmith/internal/k8sutil"
-	"github.com/coreos/klocksmith/internal/updateengine"
+	"github.com/coreos-inc/klocksmith/internal/drain"
+	"github.com/coreos-inc/klocksmith/internal/updateengine"
 )
 
 type Klocksmith struct {

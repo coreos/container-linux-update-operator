@@ -8,7 +8,7 @@ import (
 
 	"github.com/coreos/pkg/flagutil"
 
-	"github.com/coreos/klocksmith/internal/klocksmith"
+	"github.com/coreos-inc/klocksmith/internal/klocksmith"
 )
 
 var (

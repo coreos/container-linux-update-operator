@@ -9,7 +9,7 @@ import (
 	"k8s.io/client-go/1.4/pkg/watch"
 	"k8s.io/client-go/1.4/rest"
 
-	"github.com/coreos/klocksmith/internal/k8sutil"
+	"github.com/coreos-inc/klocksmith/internal/k8sutil"
 )
 
 func k8s() (*kubernetes.Clientset, error) {
