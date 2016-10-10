@@ -15,6 +15,7 @@ import (
 	"k8s.io/client-go/1.4/pkg/watch"
 
 	"github.com/coreos-inc/klocksmith/internal/drain"
+	"github.com/coreos-inc/klocksmith/internal/k8sutil"
 	"github.com/coreos-inc/klocksmith/internal/updateengine"
 )
 
@@ -206,6 +207,18 @@ func (k *Klocksmith) getPodsForDeletion() ([]v1api.Pod, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get list of pods for deletion: %v", err)
 	}
+
+	// XXX: ignoring kube-system is a simple way to avoid eviciting
+	// critical components such as kube-scheduler and
+	// kube-controller-manager.
+
+	pods = k8sutil.FilterPods(pods, func(p *v1api.Pod) bool {
+		if p.Namespace == "kube-system" {
+			return false
+		}
+
+		return true
+	})
 
 	return pods, nil
 }
