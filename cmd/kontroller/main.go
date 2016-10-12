@@ -8,12 +8,14 @@ import (
 
 	"github.com/coreos/pkg/flagutil"
 
+	"github.com/coreos-inc/klocksmith/internal/analytics"
 	"github.com/coreos-inc/klocksmith/internal/klocksmith"
 )
 
 var (
 	// avoid imported pkgs fiddling with flags.
-	flags = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+	flags            = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+	analyticsEnabled = flags.Bool("analytics", true, "Send analytics to Google Analytics")
 	//max    = flags.Int("max", 1, "Maximum number of nodes to reboot")
 )
 
@@ -33,12 +35,18 @@ func main() {
 		log.Fatalf("Failed to parse environment variables: %v", err)
 	}
 
+	if *analyticsEnabled {
+		analytics.Enable()
+	}
+
 	ko, err := klocksmith.NewKontroller()
 	if err != nil {
 		log.Fatalf("Failed to initialize kontroller: %v", err)
 	}
 
 	log.Print("kontroller running")
+
+	analytics.ControllerStarted()
 
 	if err := ko.Run(); err != nil {
 		log.Fatalf("Error while running klocksmith: %v", err)
