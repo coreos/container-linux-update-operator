@@ -3,7 +3,7 @@ TAG	?= dev
 
 all:	bin image
 
-bin:	bin/klocksmith bin/kontroller
+bin:	bin/klocksmith bin/klocksmith-controller
 
 bin/%:
 	CGO_ENABLED=0 go build -ldflags '-s -w' -tags netgo -v -o $@ ./cmd/$*

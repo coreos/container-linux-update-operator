@@ -29,18 +29,18 @@ func main() {
 
 		log.Fatalf("Failed to parse arguments: %v", err)
 	}
-	if err := flagutil.SetFlagsFromEnv(flags, "KONTROLLER"); err != nil {
+	if err := flagutil.SetFlagsFromEnv(flags, "KLOCKSMITH_CONTROLLER"); err != nil {
 		log.Fatalf("Failed to parse environment variables: %v", err)
 	}
 
 	ko, err := klocksmith.NewKontroller()
 	if err != nil {
-		log.Fatalf("Failed to initialize kontroller: %v", err)
+		log.Fatalf("Failed to initialize klocksmith-controller: %v", err)
 	}
 
-	log.Print("kontroller running")
+	log.Print("klocksmith-controller running")
 
 	if err := ko.Run(); err != nil {
-		log.Fatalf("Error while running klocksmith: %v", err)
+		log.Fatalf("Error while running klocksmith-controller: %v", err)
 	}
 }
