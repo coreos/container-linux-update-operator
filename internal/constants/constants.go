@@ -7,4 +7,9 @@ const (
 	LabelRebootNeeded     = LabelPrefix + "reboot-needed"
 	LabelRebootInProgress = LabelPrefix + "reboot-in-progress"
 	LabelOkToReboot       = LabelPrefix + "reboot-ok"
+
+	AnnotationPrefix  = LabelPrefix
+	AnnotationID      = AnnotationPrefix + "id"
+	AnnotationGroup   = AnnotationPrefix + "group"
+	AnnotationVersion = AnnotationPrefix + "version"
 )
