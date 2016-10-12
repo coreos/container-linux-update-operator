@@ -42,5 +42,5 @@ spec:
         image: quay.io/coreos/klocksmith:dev
         imagePullPolicy: Always
         command:
-        - "/bin/kontroller"
+        - "/bin/klocksmith-kontroller"
 
