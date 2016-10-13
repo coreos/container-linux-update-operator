@@ -14,6 +14,7 @@ import (
 	"k8s.io/client-go/1.4/pkg/fields"
 	"k8s.io/client-go/1.4/pkg/watch"
 
+	"github.com/coreos-inc/klocksmith/internal/constants"
 	"github.com/coreos-inc/klocksmith/internal/drain"
 	"github.com/coreos-inc/klocksmith/internal/k8sutil"
 	"github.com/coreos-inc/klocksmith/internal/updateengine"
@@ -60,8 +61,8 @@ func (k *Klocksmith) Run() error {
 	// set coreos.com/update1/reboot-in-progress=false and
 	// coreos.com/update1/reboot-needed=false
 	anno := map[string]string{
-		labelRebootInProgress: "false",
-		labelRebootNeeded:     "false",
+		constants.LabelRebootInProgress: "false",
+		constants.LabelRebootNeeded:     "false",
 	}
 	log.Printf("Setting labels %#v", anno)
 	if err := k8sutil.SetNodeLabels(k.nc, k.node, anno); err != nil {
@@ -82,22 +83,22 @@ func (k *Klocksmith) Run() error {
 
 	// indicate we need a reboot
 	anno = map[string]string{
-		labelRebootNeeded: "true",
+		constants.LabelRebootNeeded: "true",
 	}
 	log.Printf("Setting labels %#v", anno)
 	if err := k8sutil.SetNodeLabels(k.nc, k.node, anno); err != nil {
 		return err
 	}
 
-	// block until labelOkToReboot is set
+	// block until constants.LabelOkToReboot is set
 	log.Printf("Waiting for ok-to-reboot from controller...")
 	if err := k.waitForOkToReboot(); err != nil {
 		return err
 	}
 
-	// set labelRebootInProgress and drain self
+	// set constants.LabelRebootInProgress and drain self
 	anno = map[string]string{
-		labelRebootInProgress: "true",
+		constants.LabelRebootInProgress: "true",
 	}
 	log.Printf("Setting labels %#v", anno)
 	if err := k8sutil.SetNodeLabels(k.nc, k.node, anno); err != nil {
@@ -184,9 +185,9 @@ func (k *Klocksmith) waitForOkToReboot() error {
 
 	// hopefully 24 hours is enough time between indicating we need a
 	// reboot and the controller telling us to do it
-	ev, err := watch.Until(time.Hour*24, watcher, k8sutil.NodeLabelCondition(labelOkToReboot, "true"))
+	ev, err := watch.Until(time.Hour*24, watcher, k8sutil.NodeLabelCondition(constants.LabelOkToReboot, "true"))
 	if err != nil {
-		return fmt.Errorf("waiting for label %q failed: %v", labelOkToReboot, err)
+		return fmt.Errorf("waiting for label %q failed: %v", constants.LabelOkToReboot, err)
 	}
 
 	// sanity check
@@ -195,7 +196,7 @@ func (k *Klocksmith) waitForOkToReboot() error {
 		panic("event contains a non-*api.Node object")
 	}
 
-	if no.Labels[labelOkToReboot] != "true" {
+	if no.Labels[constants.LabelOkToReboot] != "true" {
 		panic("event did not contain label expected")
 	}
 
