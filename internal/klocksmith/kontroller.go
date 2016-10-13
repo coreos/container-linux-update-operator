@@ -13,6 +13,8 @@ import (
 	"k8s.io/client-go/1.4/pkg/labels"
 	"k8s.io/client-go/1.4/pkg/util/flowcontrol"
 	"k8s.io/client-go/1.4/pkg/watch"
+
+	"github.com/coreos-inc/klocksmith/internal/k8sutil"
 )
 
 type Kontroller struct {
@@ -22,7 +24,7 @@ type Kontroller struct {
 
 func NewKontroller() (*Kontroller, error) {
 	// set up kubernetes in-cluster client
-	kc, err := k8s()
+	kc, err := k8sutil.InClusterClient()
 	if err != nil {
 		return nil, fmt.Errorf("error creating kubernetes client: %v", err)
 	}
@@ -56,7 +58,7 @@ func (k *Kontroller) Run() error {
 		}
 
 		for _, n := range nodes.Items {
-			if err := setNodeLabels(k.nc, n.Name, map[string]string{
+			if err := k8sutil.SetNodeLabels(k.nc, n.Name, map[string]string{
 				labelOkToReboot: "false",
 			}); err != nil {
 				log.Printf("Failed setting label %q on node %q to false: %v", labelOkToReboot, n.Name, err)
@@ -90,7 +92,7 @@ func (k *Kontroller) Run() error {
 
 func (k *Kontroller) handleReboot(n v1api.Node) {
 	// node wants to reboot, so let it.
-	if err := setNodeLabels(k.nc, n.Name, map[string]string{
+	if err := k8sutil.SetNodeLabels(k.nc, n.Name, map[string]string{
 		labelOkToReboot: "true",
 	}); err != nil {
 		log.Printf("Failed to set label %q on node %q: %v", labelOkToReboot, n.Name, err)
@@ -106,9 +108,9 @@ func (k *Kontroller) handleReboot(n v1api.Node) {
 	// hopefully 1 hours is enough time between indicating the
 	// node can reboot and it successfully rebooting
 	conds := []watch.ConditionFunc{
-		nodeLabelCondition(labelOkToReboot, "true"),
-		nodeLabelCondition(labelRebootNeeded, "false"),
-		nodeLabelCondition(labelRebootInProgress, "false"),
+		k8sutil.NodeLabelCondition(labelOkToReboot, "true"),
+		k8sutil.NodeLabelCondition(labelRebootNeeded, "false"),
+		k8sutil.NodeLabelCondition(labelRebootInProgress, "false"),
 	}
 	_, err = watch.Until(time.Hour*1, watcher, conds...)
 	if err != nil {

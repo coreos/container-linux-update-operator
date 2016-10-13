@@ -29,7 +29,7 @@ type Klocksmith struct {
 
 func New(node string) (*Klocksmith, error) {
 	// set up kubernetes in-cluster client
-	kc, err := k8s()
+	kc, err := k8sutil.InClusterClient()
 	if err != nil {
 		return nil, fmt.Errorf("error creating kubernetes client: %v", err)
 	}
@@ -64,13 +64,13 @@ func (k *Klocksmith) Run() error {
 		labelRebootNeeded:     "false",
 	}
 	log.Printf("Setting labels %#v", anno)
-	if err := setNodeLabels(k.nc, k.node, anno); err != nil {
+	if err := k8sutil.SetNodeLabels(k.nc, k.node, anno); err != nil {
 		return err
 	}
 
 	// we are schedulable now.
 	log.Print("Marking node as schedulable")
-	if err := unschedulable(k.nc, k.node, false); err != nil {
+	if err := k8sutil.Unschedulable(k.nc, k.node, false); err != nil {
 		return err
 	}
 
@@ -85,7 +85,7 @@ func (k *Klocksmith) Run() error {
 		labelRebootNeeded: "true",
 	}
 	log.Printf("Setting labels %#v", anno)
-	if err := setNodeLabels(k.nc, k.node, anno); err != nil {
+	if err := k8sutil.SetNodeLabels(k.nc, k.node, anno); err != nil {
 		return err
 	}
 
@@ -100,7 +100,7 @@ func (k *Klocksmith) Run() error {
 		labelRebootInProgress: "true",
 	}
 	log.Printf("Setting labels %#v", anno)
-	if err := setNodeLabels(k.nc, k.node, anno); err != nil {
+	if err := k8sutil.SetNodeLabels(k.nc, k.node, anno); err != nil {
 		return err
 	}
 
@@ -112,7 +112,7 @@ func (k *Klocksmith) Run() error {
 	// ReplicationController, ReplicaSet, DaemonSet or Job')
 
 	log.Print("Marking node as unschedulable")
-	if err := unschedulable(k.nc, k.node, true); err != nil {
+	if err := k8sutil.Unschedulable(k.nc, k.node, true); err != nil {
 		return err
 	}
 
@@ -184,7 +184,7 @@ func (k *Klocksmith) waitForOkToReboot() error {
 
 	// hopefully 24 hours is enough time between indicating we need a
 	// reboot and the controller telling us to do it
-	ev, err := watch.Until(time.Hour*24, watcher, nodeLabelCondition(labelOkToReboot, "true"))
+	ev, err := watch.Until(time.Hour*24, watcher, k8sutil.NodeLabelCondition(labelOkToReboot, "true"))
 	if err != nil {
 		return fmt.Errorf("waiting for label %q failed: %v", labelOkToReboot, err)
 	}

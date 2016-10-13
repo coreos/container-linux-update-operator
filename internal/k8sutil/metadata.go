@@ -1,32 +1,16 @@
-package klocksmith
+package k8sutil
 
 import (
 	"fmt"
 
-	"k8s.io/client-go/1.4/kubernetes"
 	v1core "k8s.io/client-go/1.4/kubernetes/typed/core/v1"
 	v1api "k8s.io/client-go/1.4/pkg/api/v1"
 	"k8s.io/client-go/1.4/pkg/watch"
-	"k8s.io/client-go/1.4/rest"
-
-	"github.com/coreos-inc/klocksmith/internal/k8sutil"
 )
 
-func k8s() (*kubernetes.Clientset, error) {
-	kconf, err := rest.InClusterConfig()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get kubernetes in-cluster config: %v", err)
-	}
-
-	k8sClient, err := kubernetes.NewForConfig(kconf)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get kubernetes client: %v", err)
-	}
-
-	return k8sClient, nil
-}
-
-func nodeLabelCondition(key, value string) watch.ConditionFunc {
+// NodeLabelCondition returns a condition function that succeeds when a node
+// being watched has a label of key equal to value.
+func NodeLabelCondition(key, value string) watch.ConditionFunc {
 	return func(event watch.Event) (bool, error) {
 		switch event.Type {
 		case watch.Modified:
@@ -42,9 +26,9 @@ func nodeLabelCondition(key, value string) watch.ConditionFunc {
 	}
 }
 
-// setNodeLabels sets all keys in m to their respective values in
+// SetNodeLabels sets all keys in m to their respective values in
 // node's labels.
-func setNodeLabels(nc v1core.NodeInterface, node string, m map[string]string) error {
+func SetNodeLabels(nc v1core.NodeInterface, node string, m map[string]string) error {
 	n, err := nc.Get(node)
 	if err != nil {
 		return fmt.Errorf("failed to get node %q: %v", node, err)
@@ -54,7 +38,7 @@ func setNodeLabels(nc v1core.NodeInterface, node string, m map[string]string) er
 		n.Labels[k] = v
 	}
 
-	err = k8sutil.RetryOnConflict(k8sutil.DefaultBackoff, func() (err error) {
+	err = RetryOnConflict(DefaultBackoff, func() (err error) {
 		n, err = nc.Update(n)
 		return
 	})
@@ -66,8 +50,8 @@ func setNodeLabels(nc v1core.NodeInterface, node string, m map[string]string) er
 	return nil
 }
 
-// unschedulable sets node's 'Unschedulable' property to sched
-func unschedulable(nc v1core.NodeInterface, node string, sched bool) error {
+// Unschedulable sets node's 'Unschedulable' property to sched
+func Unschedulable(nc v1core.NodeInterface, node string, sched bool) error {
 	n, err := nc.Get(node)
 	if err != nil {
 		return fmt.Errorf("failed to get node %q: %v", node, err)
@@ -75,7 +59,7 @@ func unschedulable(nc v1core.NodeInterface, node string, sched bool) error {
 
 	n.Spec.Unschedulable = sched
 
-	if err := k8sutil.RetryOnConflict(k8sutil.DefaultBackoff, func() (err error) {
+	if err := RetryOnConflict(DefaultBackoff, func() (err error) {
 		n, err = nc.Update(n)
 		return
 	}); err != nil {
