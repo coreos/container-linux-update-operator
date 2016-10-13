@@ -1,4 +1,4 @@
-package klocksmith
+package controller
 
 import (
 	"fmt"
@@ -23,7 +23,7 @@ type Kontroller struct {
 	nc v1core.NodeInterface
 }
 
-func NewKontroller() (*Kontroller, error) {
+func New() (*Kontroller, error) {
 	// set up kubernetes in-cluster client
 	kc, err := k8sutil.InClusterClient()
 	if err != nil {

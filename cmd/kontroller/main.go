@@ -9,7 +9,7 @@ import (
 	"github.com/coreos/pkg/flagutil"
 
 	"github.com/coreos-inc/klocksmith/internal/analytics"
-	"github.com/coreos-inc/klocksmith/internal/klocksmith"
+	"github.com/coreos-inc/klocksmith/internal/controller"
 )
 
 var (
@@ -39,7 +39,7 @@ func main() {
 		analytics.Enable()
 	}
 
-	ko, err := klocksmith.NewKontroller()
+	ko, err := controller.New()
 	if err != nil {
 		log.Fatalf("Failed to initialize kontroller: %v", err)
 	}
