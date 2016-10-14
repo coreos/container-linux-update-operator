@@ -58,14 +58,31 @@ func New(node string) (*Klocksmith, error) {
 //
 // TODO: try to be more resilient against transient failures
 func (k *Klocksmith) Run() error {
+	// set annotations with helpful info about the coreos node
+	vi, err := k8sutil.GetVersionInfo()
+	if err != nil {
+		return fmt.Errorf("failed to get version info: %v", err)
+	}
+
+	anno := map[string]string{
+		constants.AnnotationID:      vi.ID,
+		constants.AnnotationGroup:   vi.Group,
+		constants.AnnotationVersion: vi.Version,
+	}
+
+	log.Printf("Setting annotations: %#v", anno)
+	if err := k8sutil.SetNodeAnnotations(k.nc, k.node, anno); err != nil {
+		return err
+	}
+
 	// set coreos.com/update1/reboot-in-progress=false and
 	// coreos.com/update1/reboot-needed=false
-	anno := map[string]string{
+	labels := map[string]string{
 		constants.LabelRebootInProgress: "false",
 		constants.LabelRebootNeeded:     "false",
 	}
-	log.Printf("Setting labels %#v", anno)
-	if err := k8sutil.SetNodeLabels(k.nc, k.node, anno); err != nil {
+	log.Printf("Setting labels %#v", labels)
+	if err := k8sutil.SetNodeLabels(k.nc, k.node, labels); err != nil {
 		return err
 	}
 
