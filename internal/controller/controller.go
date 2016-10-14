@@ -13,14 +13,21 @@ import (
 	"k8s.io/client-go/1.4/pkg/labels"
 	"k8s.io/client-go/1.4/pkg/util/flowcontrol"
 	"k8s.io/client-go/1.4/pkg/watch"
+	"k8s.io/client-go/1.4/tools/record"
 
 	"github.com/coreos-inc/klocksmith/internal/constants"
 	"github.com/coreos-inc/klocksmith/internal/k8sutil"
 )
 
+const (
+	eventReasonRebootFailed = "RebootFailed"
+	eventSourceComponent    = "klocksmith-controller"
+)
+
 type Kontroller struct {
 	kc *kubernetes.Clientset
 	nc v1core.NodeInterface
+	er record.EventRecorder
 }
 
 func New() (*Kontroller, error) {
@@ -33,7 +40,12 @@ func New() (*Kontroller, error) {
 	// node interface
 	nc := kc.Nodes()
 
-	return &Kontroller{kc, nc}, nil
+	// create event emitter
+	broadcaster := record.NewBroadcaster()
+	broadcaster.StartRecordingToSink(&v1core.EventSinkImpl{Interface: kc.Events("")})
+	er := broadcaster.NewRecorder(v1api.EventSource{Component: eventSourceComponent})
+
+	return &Kontroller{kc, nc, er}, nil
 }
 
 func (k *Kontroller) Run() error {
@@ -87,11 +99,11 @@ func (k *Kontroller) Run() error {
 
 		log.Printf("Found %d nodes that need a reboot, rebooting %q", len(nodes.Items), n.Name)
 
-		k.handleReboot(n)
+		k.handleReboot(&n)
 	}
 }
 
-func (k *Kontroller) handleReboot(n v1api.Node) {
+func (k *Kontroller) handleReboot(n *v1api.Node) {
 	// node wants to reboot, so let it.
 	if err := k8sutil.SetNodeLabels(k.nc, n.Name, map[string]string{
 		constants.LabelOkToReboot: "true",
@@ -106,8 +118,6 @@ func (k *Kontroller) handleReboot(n v1api.Node) {
 		ResourceVersion: n.ResourceVersion,
 	})
 
-	// hopefully 1 hours is enough time between indicating the
-	// node can reboot and it successfully rebooting
 	conds := []watch.ConditionFunc{
 		k8sutil.NodeLabelCondition(constants.LabelOkToReboot, "true"),
 		k8sutil.NodeLabelCondition(constants.LabelRebootNeeded, "false"),
@@ -117,6 +127,8 @@ func (k *Kontroller) handleReboot(n v1api.Node) {
 	if err != nil {
 		log.Printf("Waiting for label %q on node %q failed: %v", constants.LabelOkToReboot, n.Name, err)
 		log.Printf("Failed to wait for successful reboot of node %q", n.Name)
+
+		k.er.Eventf(n, api.EventTypeWarning, eventReasonRebootFailed, "Timed out waiting for node to return after a reboot")
 	}
 
 	// node rebooted successfully, or at least set the labels we expected from klocksmith after a reboot.
