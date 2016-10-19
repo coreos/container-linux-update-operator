@@ -15,6 +15,12 @@ spec:
         volumeMounts:
           - mountPath: /var/run/dbus
             name: var-run-dbus
+          - mountPath: /etc/coreos
+            name: etc-coreos
+          - mountPath: /usr/share/coreos
+            name: usr-share-coreos
+          - mountPath: /etc/os-release
+            name: etc-os-release
         env:
         # read by klocksmith as the node name to manage reboots for
         - name: KLOCKSMITH_NODE
@@ -25,6 +31,15 @@ spec:
       - name: var-run-dbus
         hostPath:
           path: /var/run/dbus
+      - name: etc-coreos
+        hostPath:
+          path: /etc/coreos
+      - name: usr-share-coreos
+        hostPath:
+          path: /usr/share/coreos
+      - name: etc-os-release
+        hostPath:
+          path: /etc/os-release
 ---
 apiVersion: v1
 kind: ReplicationController
