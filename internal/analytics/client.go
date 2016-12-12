@@ -8,7 +8,7 @@ import (
 
 const (
 	id       = "UA-42684979-8"
-	category = "coreos-linux-controller"
+	category = "container-linux-update-operator"
 )
 
 var (
@@ -49,5 +49,5 @@ func mustNewClient() *ga.Client {
 }
 
 func ControllerStarted() {
-	send(ga.NewEvent(category, "controller_started"))
+	send(ga.NewEvent(category, "operator_started"))
 }
