@@ -8,8 +8,8 @@ import (
 
 	"github.com/coreos/pkg/flagutil"
 
-	"github.com/coreos-inc/klocksmith/internal/analytics"
-	"github.com/coreos-inc/klocksmith/internal/controller"
+	"github.com/coreos-inc/container-linux-update-operator/internal/analytics"
+	"github.com/coreos-inc/container-linux-update-operator/internal/operator"
 )
 
 var (
@@ -31,7 +31,8 @@ func main() {
 
 		log.Fatalf("Failed to parse arguments: %v", err)
 	}
-	if err := flagutil.SetFlagsFromEnv(flags, "KONTROLLER"); err != nil {
+
+	if err := flagutil.SetFlagsFromEnv(flags, "UPDATE_OPERATOR"); err != nil {
 		log.Fatalf("Failed to parse environment variables: %v", err)
 	}
 
@@ -39,16 +40,16 @@ func main() {
 		analytics.Enable()
 	}
 
-	ko, err := controller.New()
+	o, err := operator.New()
 	if err != nil {
-		log.Fatalf("Failed to initialize kontroller: %v", err)
+		log.Fatalf("Failed to initialize %s: %v", os.Args[0], err)
 	}
 
-	log.Print("kontroller running")
+	log.Printf("%s running", os.Args[0])
 
 	analytics.ControllerStarted()
 
-	if err := ko.Run(); err != nil {
-		log.Fatalf("Error while running klocksmith: %v", err)
+	if err := o.Run(); err != nil {
+		log.Fatalf("Error while running %s: %v", os.Args[0], err)
 	}
 }

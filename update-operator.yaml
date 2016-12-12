@@ -1,16 +1,16 @@
 apiVersion: extensions/v1beta1
 kind: DaemonSet
 metadata:
-  name: klocksmith
+  name: update-agent
 spec:
   template:
     metadata:
       labels:
-        app: klocksmith
+        app: update-agent
     spec:
       containers:
-      - name: klocksmith
-        image: quay.io/coreos/klocksmith:dev
+      - name: update-agent
+        image: quay.io/coreos/container-linux-update-operator:dev
         imagePullPolicy: Always
         volumeMounts:
           - mountPath: /var/run/dbus
@@ -22,8 +22,8 @@ spec:
           - mountPath: /etc/os-release
             name: etc-os-release
         env:
-        # read by klocksmith as the node name to manage reboots for
-        - name: KLOCKSMITH_NODE
+        # read by update-agent as the node name to manage reboots for
+        - name: UPDATE_AGENT_NODE
           valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
@@ -44,18 +44,18 @@ spec:
 apiVersion: v1
 kind: ReplicationController
 metadata:
-  name: klocksmith-controller
+  name: update-operator
 spec:
   replicas: 1
   template:
     metadata:
       labels:
-        app: klocksmith-controller
+        app: update-operator
     spec:
       containers:
-      - name: klocksmith-controller
-        image: quay.io/coreos/klocksmith:dev
+      - name: update-operator
+        image: quay.io/coreos/container-linux-update-operator:dev
         imagePullPolicy: Always
         command:
-        - "/bin/kontroller"
+        - "/bin/update-operator"
 

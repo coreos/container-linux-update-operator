@@ -4,5 +4,5 @@ RUN apk add --no-cache ca-certificates
 
 COPY bin /bin/
 
-ENTRYPOINT ["/bin/klocksmith"]
+ENTRYPOINT ["/bin/update-agent"]
 

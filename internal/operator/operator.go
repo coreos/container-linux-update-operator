@@ -1,4 +1,4 @@
-package controller
+package operator
 
 import (
 	"fmt"
@@ -15,13 +15,13 @@ import (
 	"k8s.io/client-go/1.4/pkg/watch"
 	"k8s.io/client-go/1.4/tools/record"
 
-	"github.com/coreos-inc/klocksmith/internal/constants"
-	"github.com/coreos-inc/klocksmith/internal/k8sutil"
+	"github.com/coreos-inc/container-linux-update-operator/internal/constants"
+	"github.com/coreos-inc/container-linux-update-operator/internal/k8sutil"
 )
 
 const (
 	eventReasonRebootFailed = "RebootFailed"
-	eventSourceComponent    = "klocksmith-controller"
+	eventSourceComponent    = "update-operator"
 )
 
 type Kontroller struct {
@@ -34,7 +34,7 @@ func New() (*Kontroller, error) {
 	// set up kubernetes in-cluster client
 	kc, err := k8sutil.InClusterClient()
 	if err != nil {
-		return nil, fmt.Errorf("error creating kubernetes client: %v", err)
+		return nil, fmt.Errorf("error creating Kubernetes client: %v", err)
 	}
 
 	// node interface
