@@ -1,4 +1,4 @@
-package klocksmith
+package agent
 
 import (
 	"context"
@@ -14,10 +14,10 @@ import (
 	"k8s.io/client-go/1.4/pkg/fields"
 	"k8s.io/client-go/1.4/pkg/watch"
 
-	"github.com/coreos-inc/klocksmith/internal/constants"
-	"github.com/coreos-inc/klocksmith/internal/drain"
-	"github.com/coreos-inc/klocksmith/internal/k8sutil"
-	"github.com/coreos-inc/klocksmith/internal/updateengine"
+	"github.com/coreos-inc/container-linux-update-operator/internal/constants"
+	"github.com/coreos-inc/container-linux-update-operator/internal/drain"
+	"github.com/coreos-inc/container-linux-update-operator/internal/k8sutil"
+	"github.com/coreos-inc/container-linux-update-operator/internal/updateengine"
 )
 
 type Klocksmith struct {

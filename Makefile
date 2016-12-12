@@ -1,9 +1,9 @@
-IMAGE	?= quay.io/coreos/klocksmith
+IMAGE	?= quay.io/coreos/container-linux-update-operator
 TAG	?= dev
 
 all:	bin image
 
-bin:	bin/klocksmith bin/kontroller
+bin:	bin/update-agent bin/update-operator
 
 bin/%:
 	CGO_ENABLED=0 go build -ldflags '-s -w' -tags netgo -v -o $@ ./cmd/$*

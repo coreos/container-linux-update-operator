@@ -8,7 +8,7 @@ import (
 
 	"github.com/coreos/pkg/flagutil"
 
-	"github.com/coreos-inc/klocksmith/internal/klocksmith"
+	"github.com/coreos-inc/container-linux-update-operator/internal/agent"
 )
 
 var (
@@ -29,7 +29,7 @@ func main() {
 
 		log.Fatalf("Failed to parse arguments: %v", err)
 	}
-	if err := flagutil.SetFlagsFromEnv(flags, "KLOCKSMITH"); err != nil {
+	if err := flagutil.SetFlagsFromEnv(flags, "UPDATE_AGENT"); err != nil {
 		log.Fatalf("Failed to parse environment variables: %v", err)
 	}
 
@@ -37,14 +37,14 @@ func main() {
 		log.Fatal("-node is required")
 	}
 
-	kl, err := klocksmith.New(*node)
+	a, err := agent.New(*node)
 	if err != nil {
-		log.Fatalf("Failed to initialize klocksmith: %v", err)
+		log.Fatalf("Failed to initialize %s: %v", os.Args[0], err)
 	}
 
-	log.Print("klocksmith running")
+	log.Printf("%s running", os.Args[0])
 
-	if err := kl.Run(); err != nil {
-		log.Fatalf("Error while running klocksmith: %v", err)
+	if err := a.Run(); err != nil {
+		log.Fatalf("Error while running %s: %v", os.Args[0], err)
 	}
 }
