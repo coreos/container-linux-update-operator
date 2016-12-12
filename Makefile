@@ -9,7 +9,7 @@ bin/%:
 	CGO_ENABLED=0 go build -ldflags '-s -w' -tags netgo -v -o $@ ./cmd/$*
 
 precompile:
-	CGO_ENABLED=0 go test -i -tags netgo -v ./...
+	CGO_ENABLED=0 go test -i -tags netgo -v ./cmd/...
 
 image:
 	docker build -t $(IMAGE):$(TAG) -f Dockerfile .
