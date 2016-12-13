@@ -8,9 +8,9 @@ import (
 	"os"
 	"strings"
 
-	v1core "k8s.io/client-go/1.4/kubernetes/typed/core/v1"
-	v1api "k8s.io/client-go/1.4/pkg/api/v1"
-	"k8s.io/client-go/1.4/pkg/watch"
+	v1core "k8s.io/client-go/1.5/kubernetes/typed/core/v1"
+	v1api "k8s.io/client-go/1.5/pkg/api/v1"
+	"k8s.io/client-go/1.5/pkg/watch"
 )
 
 const (

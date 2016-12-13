@@ -3,13 +3,13 @@ package drain
 import (
 	"fmt"
 
-	"k8s.io/client-go/1.4/kubernetes"
-	"k8s.io/client-go/1.4/pkg/api"
-	"k8s.io/client-go/1.4/pkg/api/errors"
-	v1api "k8s.io/client-go/1.4/pkg/api/v1"
-	"k8s.io/client-go/1.4/pkg/fields"
-	"k8s.io/client-go/1.4/pkg/kubelet/types"
-	"k8s.io/client-go/1.4/pkg/runtime"
+	"k8s.io/client-go/1.5/kubernetes"
+	"k8s.io/client-go/1.5/pkg/api"
+	"k8s.io/client-go/1.5/pkg/api/errors"
+	v1api "k8s.io/client-go/1.5/pkg/api/v1"
+	"k8s.io/client-go/1.5/pkg/fields"
+	"k8s.io/client-go/1.5/pkg/kubelet/types"
+	"k8s.io/client-go/1.5/pkg/runtime"
 )
 
 // GetPodsForDeletion finds pods on the given node that are candidates for

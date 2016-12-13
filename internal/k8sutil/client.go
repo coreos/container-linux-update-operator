@@ -3,8 +3,8 @@ package k8sutil
 import (
 	"fmt"
 
-	"k8s.io/client-go/1.4/kubernetes"
-	"k8s.io/client-go/1.4/rest"
+	"k8s.io/client-go/1.5/kubernetes"
+	"k8s.io/client-go/1.5/rest"
 )
 
 // InClusterClient gets a kubernetes client with an in-cluster configuration.
