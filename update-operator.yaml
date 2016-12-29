@@ -12,6 +12,8 @@ spec:
       - name: update-agent
         image: quay.io/coreos/container-linux-update-operator:dev
         imagePullPolicy: Always
+        command:
+        - "/bin/update-agent"
         volumeMounts:
           - mountPath: /var/run/dbus
             name: var-run-dbus
@@ -41,8 +43,8 @@ spec:
         hostPath:
           path: /etc/os-release
 ---
-apiVersion: v1
-kind: ReplicationController
+apiVersion: extensions/v1beta1
+kind: Deployment
 metadata:
   name: update-operator
 spec:
