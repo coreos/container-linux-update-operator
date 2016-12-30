@@ -105,6 +105,12 @@ func splitNewlineEnv(m map[string]string, envs string) {
 	sc := bufio.NewScanner(strings.NewReader(envs))
 	for sc.Scan() {
 		spl := strings.SplitN(sc.Text(), "=", 2)
+
+		// just skip empty lines or lines without a value
+		if len(spl) == 1 {
+			continue
+		}
+
 		m[spl[0]] = spl[1]
 	}
 }
