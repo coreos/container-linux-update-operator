@@ -3,7 +3,7 @@
 package constants
 
 const (
-	LabelPrefix           = "alpha.coreos.com/update1."
+	LabelPrefix           = "container-linux-update.v1.coreos.com/"
 	LabelRebootNeeded     = LabelPrefix + "reboot-needed"
 	LabelRebootInProgress = LabelPrefix + "reboot-in-progress"
 	LabelOkToReboot       = LabelPrefix + "reboot-ok"
