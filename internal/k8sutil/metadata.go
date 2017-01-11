@@ -19,14 +19,14 @@ const (
 	osReleasePath          = "/etc/os-release"
 )
 
-// NodeLabelCondition returns a condition function that succeeds when a node
-// being watched has a label of key equal to value.
-func NodeLabelCondition(key, value string) watch.ConditionFunc {
+// NodeAnnotationCondition returns a condition function that succeeds when a
+// node being watched has an annotation of key equal to value.
+func NodeAnnotationCondition(key, value string) watch.ConditionFunc {
 	return func(event watch.Event) (bool, error) {
 		switch event.Type {
 		case watch.Modified:
 			node := event.Object.(*v1api.Node)
-			if node.Labels[key] == value {
+			if node.Annotations[key] == value {
 				return true, nil
 			}
 
