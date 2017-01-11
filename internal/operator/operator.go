@@ -10,7 +10,6 @@ import (
 	"k8s.io/client-go/1.5/pkg/api"
 	v1api "k8s.io/client-go/1.5/pkg/api/v1"
 	"k8s.io/client-go/1.5/pkg/fields"
-	"k8s.io/client-go/1.5/pkg/labels"
 	"k8s.io/client-go/1.5/pkg/util/flowcontrol"
 	"k8s.io/client-go/1.5/pkg/watch"
 	"k8s.io/client-go/1.5/tools/record"
@@ -22,6 +21,28 @@ import (
 const (
 	eventReasonRebootFailed = "RebootFailed"
 	eventSourceComponent    = "update-operator"
+)
+
+var (
+	// justRebootedSelector is a selector for combination of annotations
+	// expected to be on a node after it has completed a reboot.
+	//
+	// The update-operator sets constants.AnnotationOkToReboot to true to
+	// trigger a reboot, and the update-agent sets
+	// constants.AnnotationRebootNeeded and
+	// constants.AnnotationRebootInProgress to false when it has finished.
+	justRebootedSelector = fields.Set(map[string]string{
+		constants.AnnotationOkToReboot:       "true",
+		constants.AnnotationRebootNeeded:     "false",
+		constants.AnnotationRebootInProgress: "false",
+	}).AsSelector()
+
+	// wantsRebootSelector is a selector for the annotation expected to be on a node when it wants to be rebooted.
+	//
+	// The update-agent sets it to true when it would like to reboot, and false when it starts up.
+	wantsRebootSelector = fields.Set(map[string]string{
+		constants.AnnotationRebootNeeded: "true",
+	}).AsSelector()
 )
 
 type Kontroller struct {
@@ -53,51 +74,43 @@ func (k *Kontroller) Run() error {
 	for {
 		rl.Accept()
 
-		// find nodes which rebooted, reset constants.AnnotationOkToReboot
-		ls := labels.Set(map[string]string{
-			constants.AnnotationOkToReboot:       "true",
-			constants.AnnotationRebootNeeded:     "false",
-			constants.AnnotationRebootInProgress: "false",
-		})
-
-		nodes, err := k.nc.List(api.ListOptions{LabelSelector: ls.AsSelector()})
+		nodelist, err := k.nc.List(api.ListOptions{})
 		if err != nil {
-			log.Printf("Failed listing nodes with labels %q: %v", ls, err)
+			log.Printf("Failed listing nodes %v", err)
 			continue
 		}
 
-		if len(nodes.Items) > 0 {
-			log.Printf("Found %d rebooted nodes, setting label %q to false", len(nodes.Items), constants.AnnotationOkToReboot)
+		nodes := k8sutil.FilterNodesByAnnotation(nodelist.Items, justRebootedSelector)
+
+		if len(nodes) > 0 {
+			log.Printf("Found %d rebooted nodes, setting annotation %q to false", len(nodes), constants.AnnotationOkToReboot)
 		}
 
-		for _, n := range nodes.Items {
-			if err := k8sutil.SetNodeLabels(k.nc, n.Name, map[string]string{
+		for _, n := range nodes {
+			if err := k8sutil.SetNodeAnnotations(k.nc, n.Name, map[string]string{
 				constants.AnnotationOkToReboot: "false",
 			}); err != nil {
-				log.Printf("Failed setting label %q on node %q to false: %v", constants.AnnotationOkToReboot, n.Name, err)
+				log.Printf("Failed setting annotation %q on node %q to false: %v", constants.AnnotationOkToReboot, n.Name, err)
 			}
 		}
 
-		// find N nodes that want to reboot
-		ls = labels.Set(map[string]string{
-			constants.AnnotationRebootNeeded: "true",
-		})
-
-		nodes, err = k.nc.List(api.ListOptions{LabelSelector: ls.AsSelector()})
+		nodelist, err = k.nc.List(api.ListOptions{})
 		if err != nil {
-			log.Printf("Failed listing nodes with label %q: %v", constants.AnnotationRebootNeeded, err)
+			log.Printf("Failed listing nodes: %v", err)
 			continue
 		}
+
+		nodes = k8sutil.FilterNodesByAnnotation(nodelist.Items, wantsRebootSelector)
 
 		// pick N of these machines
 		// TODO: for now, synchronous with N == 1. might be async w/ a channel in the future to handle N > 1
-		if len(nodes.Items) == 0 {
+		if len(nodes) == 0 {
 			continue
 		}
 
-		n := nodes.Items[0]
+		n := nodes[0]
 
-		log.Printf("Found %d nodes that need a reboot, rebooting %q", len(nodes.Items), n.Name)
+		log.Printf("Found %d nodes that need a reboot, rebooting %q", len(nodes), n.Name)
 
 		k.handleReboot(&n)
 	}
@@ -105,10 +118,10 @@ func (k *Kontroller) Run() error {
 
 func (k *Kontroller) handleReboot(n *v1api.Node) {
 	// node wants to reboot, so let it.
-	if err := k8sutil.SetNodeLabels(k.nc, n.Name, map[string]string{
+	if err := k8sutil.SetNodeAnnotations(k.nc, n.Name, map[string]string{
 		constants.AnnotationOkToReboot: "true",
 	}); err != nil {
-		log.Printf("Failed to set label %q on node %q: %v", constants.AnnotationOkToReboot, n.Name, err)
+		log.Printf("Failed to set annotation %q on node %q: %v", constants.AnnotationOkToReboot, n.Name, err)
 		return
 	}
 
@@ -119,9 +132,9 @@ func (k *Kontroller) handleReboot(n *v1api.Node) {
 	})
 
 	conds := []watch.ConditionFunc{
-		k8sutil.NodeLabelCondition(constants.AnnotationOkToReboot, "true"),
-		k8sutil.NodeLabelCondition(constants.AnnotationRebootNeeded, "false"),
-		k8sutil.NodeLabelCondition(constants.AnnotationRebootInProgress, "false"),
+		k8sutil.NodeAnnotationCondition(constants.AnnotationOkToReboot, "true"),
+		k8sutil.NodeAnnotationCondition(constants.AnnotationRebootNeeded, "false"),
+		k8sutil.NodeAnnotationCondition(constants.AnnotationRebootInProgress, "false"),
 	}
 	_, err = watch.Until(time.Hour*1, watcher, conds...)
 	if err != nil {

@@ -64,25 +64,25 @@ func (k *Klocksmith) Run() error {
 		return fmt.Errorf("failed to get version info: %v", err)
 	}
 
-	anno := map[string]string{
+	labels := map[string]string{
 		constants.LabelID:      vi.ID,
 		constants.LabelGroup:   vi.Group,
 		constants.LabelVersion: vi.Version,
 	}
 
-	log.Printf("Setting annotations: %#v", anno)
-	if err := k8sutil.SetNodeAnnotations(k.nc, k.node, anno); err != nil {
+	log.Printf("Setting labels: %#v", labels)
+	if err := k8sutil.SetNodeLabels(k.nc, k.node, labels); err != nil {
 		return err
 	}
 
 	// set coreos.com/update1/reboot-in-progress=false and
 	// coreos.com/update1/reboot-needed=false
-	labels := map[string]string{
+	anno := map[string]string{
 		constants.AnnotationRebootInProgress: "false",
 		constants.AnnotationRebootNeeded:     "false",
 	}
-	log.Printf("Setting labels %#v", labels)
-	if err := k8sutil.SetNodeLabels(k.nc, k.node, labels); err != nil {
+	log.Printf("Setting annotations %#v", anno)
+	if err := k8sutil.SetNodeAnnotations(k.nc, k.node, anno); err != nil {
 		return err
 	}
 
@@ -102,8 +102,8 @@ func (k *Klocksmith) Run() error {
 	anno = map[string]string{
 		constants.AnnotationRebootNeeded: "true",
 	}
-	log.Printf("Setting labels %#v", anno)
-	if err := k8sutil.SetNodeLabels(k.nc, k.node, anno); err != nil {
+	log.Printf("Setting annotations %#v", anno)
+	if err := k8sutil.SetNodeAnnotations(k.nc, k.node, anno); err != nil {
 		return err
 	}
 
@@ -117,8 +117,8 @@ func (k *Klocksmith) Run() error {
 	anno = map[string]string{
 		constants.AnnotationRebootInProgress: "true",
 	}
-	log.Printf("Setting labels %#v", anno)
-	if err := k8sutil.SetNodeLabels(k.nc, k.node, anno); err != nil {
+	log.Printf("Setting annotations %#v", anno)
+	if err := k8sutil.SetNodeAnnotations(k.nc, k.node, anno); err != nil {
 		return err
 	}
 
@@ -202,9 +202,9 @@ func (k *Klocksmith) waitForOkToReboot() error {
 
 	// hopefully 24 hours is enough time between indicating we need a
 	// reboot and the controller telling us to do it
-	ev, err := watch.Until(time.Hour*24, watcher, k8sutil.NodeLabelCondition(constants.AnnotationOkToReboot, "true"))
+	ev, err := watch.Until(time.Hour*24, watcher, k8sutil.NodeAnnotationCondition(constants.AnnotationOkToReboot, "true"))
 	if err != nil {
-		return fmt.Errorf("waiting for label %q failed: %v", constants.AnnotationOkToReboot, err)
+		return fmt.Errorf("waiting for annotation %q failed: %v", constants.AnnotationOkToReboot, err)
 	}
 
 	// sanity check
@@ -213,8 +213,8 @@ func (k *Klocksmith) waitForOkToReboot() error {
 		panic("event contains a non-*api.Node object")
 	}
 
-	if no.Labels[constants.AnnotationOkToReboot] != "true" {
-		panic("event did not contain label expected")
+	if no.Annotations[constants.AnnotationOkToReboot] != "true" {
+		panic("event did not contain annotation expected")
 	}
 
 	return nil
