@@ -78,8 +78,8 @@ func (k *Klocksmith) Run() error {
 	// set coreos.com/update1/reboot-in-progress=false and
 	// coreos.com/update1/reboot-needed=false
 	anno := map[string]string{
-		constants.AnnotationRebootInProgress: "false",
-		constants.AnnotationRebootNeeded:     "false",
+		constants.AnnotationRebootInProgress: constants.False,
+		constants.AnnotationRebootNeeded:     constants.False,
 	}
 	log.Printf("Setting annotations %#v", anno)
 	if err := k8sutil.SetNodeAnnotations(k.nc, k.node, anno); err != nil {
@@ -100,7 +100,7 @@ func (k *Klocksmith) Run() error {
 
 	// indicate we need a reboot
 	anno = map[string]string{
-		constants.AnnotationRebootNeeded: "true",
+		constants.AnnotationRebootNeeded: constants.True,
 	}
 	log.Printf("Setting annotations %#v", anno)
 	if err := k8sutil.SetNodeAnnotations(k.nc, k.node, anno); err != nil {
@@ -115,7 +115,7 @@ func (k *Klocksmith) Run() error {
 
 	// set constants.AnnotationRebootInProgress and drain self
 	anno = map[string]string{
-		constants.AnnotationRebootInProgress: "true",
+		constants.AnnotationRebootInProgress: constants.True,
 	}
 	log.Printf("Setting annotations %#v", anno)
 	if err := k8sutil.SetNodeAnnotations(k.nc, k.node, anno); err != nil {
@@ -202,7 +202,7 @@ func (k *Klocksmith) waitForOkToReboot() error {
 
 	// hopefully 24 hours is enough time between indicating we need a
 	// reboot and the controller telling us to do it
-	ev, err := watch.Until(time.Hour*24, watcher, k8sutil.NodeAnnotationCondition(constants.AnnotationOkToReboot, "true"))
+	ev, err := watch.Until(time.Hour*24, watcher, k8sutil.NodeAnnotationCondition(constants.AnnotationOkToReboot, constants.True))
 	if err != nil {
 		return fmt.Errorf("waiting for annotation %q failed: %v", constants.AnnotationOkToReboot, err)
 	}
@@ -213,7 +213,7 @@ func (k *Klocksmith) waitForOkToReboot() error {
 		panic("event contains a non-*api.Node object")
 	}
 
-	if no.Annotations[constants.AnnotationOkToReboot] != "true" {
+	if no.Annotations[constants.AnnotationOkToReboot] != constants.True {
 		panic("event did not contain annotation expected")
 	}
 

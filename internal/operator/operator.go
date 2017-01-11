@@ -32,16 +32,16 @@ var (
 	// constants.AnnotationRebootNeeded and
 	// constants.AnnotationRebootInProgress to false when it has finished.
 	justRebootedSelector = fields.Set(map[string]string{
-		constants.AnnotationOkToReboot:       "true",
-		constants.AnnotationRebootNeeded:     "false",
-		constants.AnnotationRebootInProgress: "false",
+		constants.AnnotationOkToReboot:       constants.True,
+		constants.AnnotationRebootNeeded:     constants.False,
+		constants.AnnotationRebootInProgress: constants.False,
 	}).AsSelector()
 
 	// wantsRebootSelector is a selector for the annotation expected to be on a node when it wants to be rebooted.
 	//
 	// The update-agent sets it to true when it would like to reboot, and false when it starts up.
 	wantsRebootSelector = fields.Set(map[string]string{
-		constants.AnnotationRebootNeeded: "true",
+		constants.AnnotationRebootNeeded: constants.True,
 	}).AsSelector()
 )
 
@@ -88,7 +88,7 @@ func (k *Kontroller) Run() error {
 
 		for _, n := range nodes {
 			if err := k8sutil.SetNodeAnnotations(k.nc, n.Name, map[string]string{
-				constants.AnnotationOkToReboot: "false",
+				constants.AnnotationOkToReboot: constants.False,
 			}); err != nil {
 				log.Printf("Failed setting annotation %q on node %q to false: %v", constants.AnnotationOkToReboot, n.Name, err)
 			}
@@ -119,7 +119,7 @@ func (k *Kontroller) Run() error {
 func (k *Kontroller) handleReboot(n *v1api.Node) {
 	// node wants to reboot, so let it.
 	if err := k8sutil.SetNodeAnnotations(k.nc, n.Name, map[string]string{
-		constants.AnnotationOkToReboot: "true",
+		constants.AnnotationOkToReboot: constants.True,
 	}); err != nil {
 		log.Printf("Failed to set annotation %q on node %q: %v", constants.AnnotationOkToReboot, n.Name, err)
 		return
@@ -132,9 +132,9 @@ func (k *Kontroller) handleReboot(n *v1api.Node) {
 	})
 
 	conds := []watch.ConditionFunc{
-		k8sutil.NodeAnnotationCondition(constants.AnnotationOkToReboot, "true"),
-		k8sutil.NodeAnnotationCondition(constants.AnnotationRebootNeeded, "false"),
-		k8sutil.NodeAnnotationCondition(constants.AnnotationRebootInProgress, "false"),
+		k8sutil.NodeAnnotationCondition(constants.AnnotationOkToReboot, constants.True),
+		k8sutil.NodeAnnotationCondition(constants.AnnotationRebootNeeded, constants.False),
+		k8sutil.NodeAnnotationCondition(constants.AnnotationRebootInProgress, constants.False),
 	}
 	_, err = watch.Until(time.Hour*1, watcher, conds...)
 	if err != nil {
