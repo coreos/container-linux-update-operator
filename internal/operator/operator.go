@@ -53,11 +53,11 @@ func (k *Kontroller) Run() error {
 	for {
 		rl.Accept()
 
-		// find nodes which rebooted, reset constants.LabelOkToReboot
+		// find nodes which rebooted, reset constants.AnnotationOkToReboot
 		ls := labels.Set(map[string]string{
-			constants.LabelOkToReboot:       "true",
-			constants.LabelRebootNeeded:     "false",
-			constants.LabelRebootInProgress: "false",
+			constants.AnnotationOkToReboot:       "true",
+			constants.AnnotationRebootNeeded:     "false",
+			constants.AnnotationRebootInProgress: "false",
 		})
 
 		nodes, err := k.nc.List(api.ListOptions{LabelSelector: ls.AsSelector()})
@@ -67,25 +67,25 @@ func (k *Kontroller) Run() error {
 		}
 
 		if len(nodes.Items) > 0 {
-			log.Printf("Found %d rebooted nodes, setting label %q to false", len(nodes.Items), constants.LabelOkToReboot)
+			log.Printf("Found %d rebooted nodes, setting label %q to false", len(nodes.Items), constants.AnnotationOkToReboot)
 		}
 
 		for _, n := range nodes.Items {
 			if err := k8sutil.SetNodeLabels(k.nc, n.Name, map[string]string{
-				constants.LabelOkToReboot: "false",
+				constants.AnnotationOkToReboot: "false",
 			}); err != nil {
-				log.Printf("Failed setting label %q on node %q to false: %v", constants.LabelOkToReboot, n.Name, err)
+				log.Printf("Failed setting label %q on node %q to false: %v", constants.AnnotationOkToReboot, n.Name, err)
 			}
 		}
 
 		// find N nodes that want to reboot
 		ls = labels.Set(map[string]string{
-			constants.LabelRebootNeeded: "true",
+			constants.AnnotationRebootNeeded: "true",
 		})
 
 		nodes, err = k.nc.List(api.ListOptions{LabelSelector: ls.AsSelector()})
 		if err != nil {
-			log.Printf("Failed listing nodes with label %q: %v", constants.LabelRebootNeeded, err)
+			log.Printf("Failed listing nodes with label %q: %v", constants.AnnotationRebootNeeded, err)
 			continue
 		}
 
@@ -106,9 +106,9 @@ func (k *Kontroller) Run() error {
 func (k *Kontroller) handleReboot(n *v1api.Node) {
 	// node wants to reboot, so let it.
 	if err := k8sutil.SetNodeLabels(k.nc, n.Name, map[string]string{
-		constants.LabelOkToReboot: "true",
+		constants.AnnotationOkToReboot: "true",
 	}); err != nil {
-		log.Printf("Failed to set label %q on node %q: %v", constants.LabelOkToReboot, n.Name, err)
+		log.Printf("Failed to set label %q on node %q: %v", constants.AnnotationOkToReboot, n.Name, err)
 		return
 	}
 
@@ -119,13 +119,13 @@ func (k *Kontroller) handleReboot(n *v1api.Node) {
 	})
 
 	conds := []watch.ConditionFunc{
-		k8sutil.NodeLabelCondition(constants.LabelOkToReboot, "true"),
-		k8sutil.NodeLabelCondition(constants.LabelRebootNeeded, "false"),
-		k8sutil.NodeLabelCondition(constants.LabelRebootInProgress, "false"),
+		k8sutil.NodeLabelCondition(constants.AnnotationOkToReboot, "true"),
+		k8sutil.NodeLabelCondition(constants.AnnotationRebootNeeded, "false"),
+		k8sutil.NodeLabelCondition(constants.AnnotationRebootInProgress, "false"),
 	}
 	_, err = watch.Until(time.Hour*1, watcher, conds...)
 	if err != nil {
-		log.Printf("Waiting for label %q on node %q failed: %v", constants.LabelOkToReboot, n.Name, err)
+		log.Printf("Waiting for label %q on node %q failed: %v", constants.AnnotationOkToReboot, n.Name, err)
 		log.Printf("Failed to wait for successful reboot of node %q", n.Name)
 
 		k.er.Eventf(n, api.EventTypeWarning, eventReasonRebootFailed, "Timed out waiting for node to return after a reboot")

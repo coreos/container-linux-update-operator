@@ -11,26 +11,15 @@ const (
 	Prefix = "container-linux-update.v1.coreos.com/"
 
 	// Key set to "true" by the update-agent when a reboot is requested.
-	LabelRebootNeeded = Prefix + "reboot-needed"
+	AnnotationRebootNeeded = Prefix + "reboot-needed"
 
 	// Key set to "true" by the update-agent when node-drain and reboot is
 	// initiated.
-	LabelRebootInProgress = Prefix + "reboot-in-progress"
+	AnnotationRebootInProgress = Prefix + "reboot-in-progress"
 
 	// Key set to "true" by the update-operator when an agent may proceed
 	// with a node-drain and reboot.
-	LabelOkToReboot = Prefix + "reboot-ok"
-
-	// Key set by the update-agent to the value of "ID" in /etc/os-release.
-	AnnotationID = Prefix + "id"
-
-	// Key set by the update-agent to the value of "GROUP" in
-	// /usr/share/coreos/update.conf, overridden by the value of "GROUP" in
-	// /etc/coreos/update.conf.
-	AnnotationGroup = Prefix + "group"
-
-	// Key set by the update-agent to the value of "VERSION" in /etc/os-release.
-	AnnotationVersion = Prefix + "version"
+	AnnotationOkToReboot = Prefix + "reboot-ok"
 
 	// Key set by the update-agent to the current operator status of update_agent.
 	//
@@ -46,4 +35,15 @@ const (
 	//
 	// It is possible, but extremely unlike for it to be "unknown status".
 	AnnotationStatus = Prefix + "status"
+
+	// Key set by the update-agent to the value of "ID" in /etc/os-release.
+	LabelID = Prefix + "id"
+
+	// Key set by the update-agent to the value of "GROUP" in
+	// /usr/share/coreos/update.conf, overridden by the value of "GROUP" in
+	// /etc/coreos/update.conf.
+	LabelGroup = Prefix + "group"
+
+	// Key set by the update-agent to the value of "VERSION" in /etc/os-release.
+	LabelVersion = Prefix + "version"
 )
