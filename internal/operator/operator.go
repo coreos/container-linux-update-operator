@@ -39,10 +39,11 @@ var (
 
 	// wantsRebootSelector is a selector for the annotation expected to be on a node when it wants to be rebooted.
 	//
-	// The update-agent sets it to true when it would like to reboot, and false when it starts up.
-	wantsRebootSelector = fields.Set(map[string]string{
-		constants.AnnotationRebootNeeded: constants.True,
-	}).AsSelector()
+	// The update-agent sets constants.AnnotationRebootNeeded to true when
+	// it would like to reboot, and false when it starts up.
+	//
+	// If constants.AnnotationRebootPaused is set to "true", the update-agent will not consider it for rebooting.
+	wantsRebootSelector = fields.ParseSelectorOrDie(constants.AnnotationRebootNeeded + "==" + constants.True + "," + constants.AnnotationRebootPaused + "!=" + constants.True)
 )
 
 type Kontroller struct {
