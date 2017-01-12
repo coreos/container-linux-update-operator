@@ -21,6 +21,11 @@ const (
 	// with a node-drain and reboot.
 	AnnotationOkToReboot = Prefix + "reboot-ok"
 
+	// Key that may be set by the administrator to "true" to prevent
+	// update-operator from considering a node for rebooting.  Never set by
+	// the update-agent or update-operator.
+	AnnotationRebootPaused = Prefix + "reboot-paused"
+
 	// Key set by the update-agent to the current operator status of update_agent.
 	//
 	// Possible values are:
