@@ -28,4 +28,9 @@ import:
   - 1.5/pkg/watch
   - 1.5/rest
   - 1.5/tools/record
+- package: github.com/gogo/protobuf
+  version: v0.3
+  subpackages:
+  - proto
+  - sortkeys
 
