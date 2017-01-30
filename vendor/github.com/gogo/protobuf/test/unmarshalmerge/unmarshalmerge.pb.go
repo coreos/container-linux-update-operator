@@ -36,14 +36,21 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+
 type Big struct {
-	Sub              *Sub   `protobuf:"bytes,1,opt,name=Sub" json:"Sub,omitempty"`
-	Number           *int64 `protobuf:"varint,2,opt,name=Number" json:"Number,omitempty"`
+	Sub              *Sub   `protobuf:"bytes,1,opt,name=Sub,json=sub" json:"Sub,omitempty"`
+	Number           *int64 `protobuf:"varint,2,opt,name=Number,json=number" json:"Number,omitempty"`
 	XXX_unrecognized []byte `json:"-"`
 }
 
-func (m *Big) Reset()      { *m = Big{} }
-func (*Big) ProtoMessage() {}
+func (m *Big) Reset()                    { *m = Big{} }
+func (*Big) ProtoMessage()               {}
+func (*Big) Descriptor() ([]byte, []int) { return fileDescriptorUnmarshalmerge, []int{0} }
 
 func (m *Big) GetSub() *Sub {
 	if m != nil {
@@ -60,13 +67,14 @@ func (m *Big) GetNumber() int64 {
 }
 
 type BigUnsafe struct {
-	Sub              *Sub   `protobuf:"bytes,1,opt,name=Sub" json:"Sub,omitempty"`
-	Number           *int64 `protobuf:"varint,2,opt,name=Number" json:"Number,omitempty"`
+	Sub              *Sub   `protobuf:"bytes,1,opt,name=Sub,json=sub" json:"Sub,omitempty"`
+	Number           *int64 `protobuf:"varint,2,opt,name=Number,json=number" json:"Number,omitempty"`
 	XXX_unrecognized []byte `json:"-"`
 }
 
-func (m *BigUnsafe) Reset()      { *m = BigUnsafe{} }
-func (*BigUnsafe) ProtoMessage() {}
+func (m *BigUnsafe) Reset()                    { *m = BigUnsafe{} }
+func (*BigUnsafe) ProtoMessage()               {}
+func (*BigUnsafe) Descriptor() ([]byte, []int) { return fileDescriptorUnmarshalmerge, []int{1} }
 
 func (m *BigUnsafe) GetSub() *Sub {
 	if m != nil {
@@ -83,12 +91,13 @@ func (m *BigUnsafe) GetNumber() int64 {
 }
 
 type Sub struct {
-	SubNumber        *int64 `protobuf:"varint,1,opt,name=SubNumber" json:"SubNumber,omitempty"`
+	SubNumber        *int64 `protobuf:"varint,1,opt,name=SubNumber,json=subNumber" json:"SubNumber,omitempty"`
 	XXX_unrecognized []byte `json:"-"`
 }
 
-func (m *Sub) Reset()      { *m = Sub{} }
-func (*Sub) ProtoMessage() {}
+func (m *Sub) Reset()                    { *m = Sub{} }
+func (*Sub) ProtoMessage()               {}
+func (*Sub) Descriptor() ([]byte, []int) { return fileDescriptorUnmarshalmerge, []int{2} }
 
 func (m *Sub) GetSubNumber() int64 {
 	if m != nil && m.SubNumber != nil {
@@ -98,22 +107,23 @@ func (m *Sub) GetSubNumber() int64 {
 }
 
 type IntMerge struct {
-	Int64            int64  `protobuf:"varint,1,req,name=Int64" json:"Int64"`
-	Int32            int32  `protobuf:"varint,2,opt,name=Int32" json:"Int32"`
-	Sint32           int32  `protobuf:"zigzag32,3,req,name=Sint32" json:"Sint32"`
-	Sint64           int64  `protobuf:"zigzag64,4,opt,name=Sint64" json:"Sint64"`
-	Uint64           uint64 `protobuf:"varint,5,opt,name=Uint64" json:"Uint64"`
-	Uint32           uint32 `protobuf:"varint,6,req,name=Uint32" json:"Uint32"`
-	Fixed64          uint64 `protobuf:"fixed64,7,opt,name=Fixed64" json:"Fixed64"`
-	Fixed32          uint32 `protobuf:"fixed32,8,opt,name=Fixed32" json:"Fixed32"`
-	Sfixed32         int32  `protobuf:"fixed32,9,req,name=Sfixed32" json:"Sfixed32"`
-	Sfixed64         int64  `protobuf:"fixed64,10,opt,name=Sfixed64" json:"Sfixed64"`
-	Bool             bool   `protobuf:"varint,11,opt,name=Bool" json:"Bool"`
+	Int64            int64  `protobuf:"varint,1,req,name=Int64,json=int64" json:"Int64"`
+	Int32            int32  `protobuf:"varint,2,opt,name=Int32,json=int32" json:"Int32"`
+	Sint32           int32  `protobuf:"zigzag32,3,req,name=Sint32,json=sint32" json:"Sint32"`
+	Sint64           int64  `protobuf:"zigzag64,4,opt,name=Sint64,json=sint64" json:"Sint64"`
+	Uint64           uint64 `protobuf:"varint,5,opt,name=Uint64,json=uint64" json:"Uint64"`
+	Uint32           uint32 `protobuf:"varint,6,req,name=Uint32,json=uint32" json:"Uint32"`
+	Fixed64          uint64 `protobuf:"fixed64,7,opt,name=Fixed64,json=fixed64" json:"Fixed64"`
+	Fixed32          uint32 `protobuf:"fixed32,8,opt,name=Fixed32,json=fixed32" json:"Fixed32"`
+	Sfixed32         int32  `protobuf:"fixed32,9,req,name=Sfixed32,json=sfixed32" json:"Sfixed32"`
+	Sfixed64         int64  `protobuf:"fixed64,10,opt,name=Sfixed64,json=sfixed64" json:"Sfixed64"`
+	Bool             bool   `protobuf:"varint,11,opt,name=Bool,json=bool" json:"Bool"`
 	XXX_unrecognized []byte `json:"-"`
 }
 
-func (m *IntMerge) Reset()      { *m = IntMerge{} }
-func (*IntMerge) ProtoMessage() {}
+func (m *IntMerge) Reset()                    { *m = IntMerge{} }
+func (*IntMerge) ProtoMessage()               {}
+func (*IntMerge) Descriptor() ([]byte, []int) { return fileDescriptorUnmarshalmerge, []int{3} }
 
 func (m *IntMerge) GetInt64() int64 {
 	if m != nil {
@@ -652,11 +662,12 @@ func valueToGoStringUnmarshalmerge(v interface{}, typ string) string {
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("func(v %v) *%v { return &v } ( %#v )", typ, typ, pv)
 }
-func extensionToGoStringUnmarshalmerge(e map[int32]github_com_gogo_protobuf_proto.Extension) string {
+func extensionToGoStringUnmarshalmerge(m github_com_gogo_protobuf_proto.Message) string {
+	e := github_com_gogo_protobuf_proto.GetUnsafeExtensionsMap(m)
 	if e == nil {
 		return "nil"
 	}
-	s := "map[int32]proto.Extension{"
+	s := "proto.NewUnsafeXXX_InternalExtensions(map[int32]proto.Extension{"
 	keys := make([]int, 0, len(e))
 	for k := range e {
 		keys = append(keys, int(k))
@@ -666,7 +677,7 @@ func extensionToGoStringUnmarshalmerge(e map[int32]github_com_gogo_protobuf_prot
 	for _, k := range keys {
 		ss = append(ss, strconv.Itoa(k)+": "+e[int32(k)].GoString())
 	}
-	s += strings.Join(ss, ",") + "}"
+	s += strings.Join(ss, ",") + "})"
 	return s
 }
 func NewPopulatedBig(r randyUnmarshalmerge, easy bool) *Big {
@@ -1647,3 +1658,34 @@ var (
 	ErrInvalidLengthUnmarshalmergeUnsafe = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowUnmarshalmergeUnsafe   = fmt.Errorf("proto: integer overflow")
 )
+
+func init() { proto.RegisterFile("unmarshalmerge.proto", fileDescriptorUnmarshalmerge) }
+
+var fileDescriptorUnmarshalmerge = []byte{
+	// 395 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xa4, 0xd0, 0xbd, 0x8a, 0xd5, 0x40,
+	0x14, 0x07, 0xf0, 0x3d, 0xf9, 0xce, 0x2c, 0x7e, 0x8d, 0x22, 0xc3, 0xb2, 0xcc, 0x0e, 0x0b, 0xc2,
+	0x58, 0x78, 0x17, 0x92, 0x90, 0xc2, 0x32, 0x85, 0xb0, 0x82, 0x22, 0x37, 0xec, 0x03, 0xdc, 0xd1,
+	0xdc, 0x6c, 0xe0, 0x26, 0x23, 0x49, 0x06, 0x2c, 0x7d, 0x04, 0x5f, 0xc1, 0xce, 0x47, 0xb0, 0xdc,
+	0xd2, 0x47, 0xb0, 0x5a, 0x4c, 0x9e, 0xc0, 0xd2, 0x52, 0x32, 0x99, 0x2b, 0x37, 0x5a, 0xda, 0x9d,
+	0x73, 0x7e, 0xff, 0x39, 0x07, 0x06, 0x3d, 0x52, 0x4d, 0xbd, 0x69, 0xbb, 0xeb, 0xcd, 0xae, 0x2e,
+	0xda, 0xb2, 0x58, 0xbd, 0x6f, 0x65, 0x2f, 0xf1, 0xdd, 0xe5, 0xf4, 0xe4, 0x59, 0x59, 0xf5, 0xd7,
+	0x4a, 0xac, 0xde, 0xca, 0xfa, 0xa2, 0x94, 0xa5, 0xbc, 0xd0, 0x31, 0xa1, 0xb6, 0xba, 0xd3, 0x8d,
+	0xae, 0xe6, 0xe7, 0xe7, 0x2f, 0x91, 0x9d, 0x55, 0x25, 0x7e, 0x82, 0xec, 0x5c, 0x09, 0x02, 0x0c,
+	0xf8, 0x71, 0xf4, 0x70, 0xf5, 0xd7, 0xa5, 0x5c, 0x89, 0xb5, 0xdd, 0x29, 0x81, 0x1f, 0x23, 0xef,
+	0xb5, 0xaa, 0x45, 0xd1, 0x12, 0x8b, 0x01, 0xb7, 0xd7, 0x5e, 0xa3, 0xbb, 0xe7, 0xce, 0xa7, 0xcf,
+	0x67, 0x70, 0xfe, 0x06, 0x85, 0x59, 0x55, 0x5e, 0x35, 0xdd, 0x66, 0x5b, 0xfc, 0xf7, 0xc6, 0x9b,
+	0x69, 0xe3, 0x53, 0xbd, 0x04, 0x9f, 0xa2, 0x30, 0x57, 0xc2, 0xe4, 0x40, 0xe7, 0xc2, 0x6e, 0x3f,
+	0x30, 0xc7, 0x6f, 0x2d, 0x14, 0x5c, 0x36, 0xfd, 0xab, 0x69, 0x3d, 0x3e, 0x41, 0xee, 0x65, 0xd3,
+	0xa7, 0x09, 0x01, 0x66, 0x71, 0x3b, 0x73, 0xbe, 0xdd, 0x9e, 0x1d, 0xad, 0xdd, 0x6a, 0x1a, 0x19,
+	0x8b, 0x23, 0x7d, 0xd0, 0x3d, 0xb0, 0x38, 0xc2, 0xa7, 0xc8, 0xcb, 0x75, 0x45, 0x6c, 0x66, 0xf1,
+	0x07, 0x06, 0xbd, 0x6e, 0xa1, 0x69, 0x42, 0x1c, 0x06, 0x1c, 0x1f, 0x6a, 0x9a, 0x4c, 0x7a, 0x35,
+	0xab, 0xcb, 0x80, 0x3b, 0x7b, 0x55, 0x0b, 0x8d, 0x23, 0xe2, 0x31, 0x8b, 0xdf, 0x39, 0xd4, 0x38,
+	0xc2, 0x14, 0xf9, 0x2f, 0xaa, 0x0f, 0xc5, 0xbb, 0x34, 0x21, 0x3e, 0x03, 0xee, 0x19, 0xf6, 0xb7,
+	0xf3, 0xf0, 0x8f, 0xc7, 0x11, 0x09, 0x18, 0x70, 0x7f, 0xe1, 0x71, 0x84, 0x19, 0x0a, 0x72, 0x53,
+	0x93, 0x90, 0x59, 0xfc, 0x9e, 0x09, 0x04, 0xdd, 0x3f, 0x89, 0x34, 0x21, 0x88, 0x01, 0xbf, 0xbf,
+	0x4c, 0xa4, 0x09, 0x26, 0xc8, 0xc9, 0xa4, 0xdc, 0x91, 0x63, 0x06, 0x3c, 0x30, 0xea, 0x08, 0x29,
+	0x77, 0xf3, 0x07, 0x67, 0xec, 0xfb, 0x40, 0x8f, 0x7e, 0x0c, 0x14, 0x7e, 0x0e, 0x14, 0x7e, 0x0d,
+	0x14, 0x3e, 0x8e, 0x14, 0xbe, 0x8c, 0x14, 0xbe, 0x8e, 0x14, 0x6e, 0x46, 0x0a, 0xbf, 0x03, 0x00,
+	0x00, 0xff, 0xff, 0xac, 0xe4, 0xac, 0xa7, 0xa1, 0x02, 0x00, 0x00,
+}

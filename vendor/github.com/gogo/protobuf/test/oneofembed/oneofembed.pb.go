@@ -24,13 +24,20 @@ var _ = proto1.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto1.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+
 type Foo struct {
 	*Bar `protobuf:"bytes,1,opt,name=bar,embedded=bar" json:"bar,omitempty"`
 }
 
-func (m *Foo) Reset()         { *m = Foo{} }
-func (m *Foo) String() string { return proto1.CompactTextString(m) }
-func (*Foo) ProtoMessage()    {}
+func (m *Foo) Reset()                    { *m = Foo{} }
+func (m *Foo) String() string            { return proto1.CompactTextString(m) }
+func (*Foo) ProtoMessage()               {}
+func (*Foo) Descriptor() ([]byte, []int) { return fileDescriptorOneofembed, []int{0} }
 
 type Bar struct {
 	// Types that are valid to be assigned to Pick:
@@ -39,9 +46,10 @@ type Bar struct {
 	Pick isBar_Pick `protobuf_oneof:"pick"`
 }
 
-func (m *Bar) Reset()         { *m = Bar{} }
-func (m *Bar) String() string { return proto1.CompactTextString(m) }
-func (*Bar) ProtoMessage()    {}
+func (m *Bar) Reset()                    { *m = Bar{} }
+func (m *Bar) String() string            { return proto1.CompactTextString(m) }
+func (*Bar) ProtoMessage()               {}
+func (*Bar) Descriptor() ([]byte, []int) { return fileDescriptorOneofembed, []int{1} }
 
 type isBar_Pick interface {
 	isBar_Pick()
@@ -80,8 +88,8 @@ func (m *Bar) GetB() bool {
 }
 
 // XXX_OneofFuncs is for the internal use of the proto package.
-func (*Bar) XXX_OneofFuncs() (func(msg proto1.Message, b *proto1.Buffer) error, func(msg proto1.Message, tag, wire int, b *proto1.Buffer) (bool, error), []interface{}) {
-	return _Bar_OneofMarshaler, _Bar_OneofUnmarshaler, []interface{}{
+func (*Bar) XXX_OneofFuncs() (func(msg proto1.Message, b *proto1.Buffer) error, func(msg proto1.Message, tag, wire int, b *proto1.Buffer) (bool, error), func(msg proto1.Message) (n int), []interface{}) {
+	return _Bar_OneofMarshaler, _Bar_OneofUnmarshaler, _Bar_OneofSizer, []interface{}{
 		(*Bar_A)(nil),
 		(*Bar_B)(nil),
 	}
@@ -132,6 +140,23 @@ func _Bar_OneofUnmarshaler(msg proto1.Message, tag, wire int, b *proto1.Buffer) 
 	default:
 		return false, nil
 	}
+}
+
+func _Bar_OneofSizer(msg proto1.Message) (n int) {
+	m := msg.(*Bar)
+	// pick
+	switch x := m.Pick.(type) {
+	case *Bar_A:
+		n += proto1.SizeVarint(11<<3 | proto1.WireVarint)
+		n += 1
+	case *Bar_B:
+		n += proto1.SizeVarint(12<<3 | proto1.WireVarint)
+		n += 1
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
 }
 
 func init() {
@@ -370,4 +395,21 @@ func encodeVarintPopulateOneofembed(data []byte, v uint64) []byte {
 	}
 	data = append(data, uint8(v))
 	return data
+}
+
+func init() { proto1.RegisterFile("oneofembed.proto", fileDescriptorOneofembed) }
+
+var fileDescriptorOneofembed = []byte{
+	// 171 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xe2, 0x12, 0xc8, 0xcf, 0x4b, 0xcd,
+	0x4f, 0x4b, 0xcd, 0x4d, 0x4a, 0x4d, 0xd1, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x05, 0x53,
+	0x52, 0xba, 0xe9, 0x99, 0x25, 0x19, 0xa5, 0x49, 0x7a, 0xc9, 0xf9, 0xb9, 0xfa, 0xe9, 0xf9, 0xe9,
+	0xf9, 0xfa, 0x60, 0xe1, 0xa4, 0xd2, 0x34, 0x30, 0x0f, 0xcc, 0x01, 0xb3, 0x20, 0xba, 0x94, 0x34,
+	0xb9, 0x98, 0xdd, 0xf2, 0xf3, 0x85, 0x94, 0xb8, 0x98, 0x93, 0x12, 0x8b, 0x24, 0x18, 0x15, 0x18,
+	0x35, 0xb8, 0x8d, 0xb8, 0x20, 0x72, 0x7a, 0x4e, 0x89, 0x45, 0x4e, 0x2c, 0x17, 0xee, 0xc9, 0x33,
+	0x06, 0x81, 0x24, 0x95, 0x74, 0xb9, 0x98, 0x9d, 0x12, 0x8b, 0x84, 0xf8, 0xb8, 0x18, 0x13, 0x25,
+	0xb8, 0x15, 0x18, 0x35, 0x38, 0x3c, 0x18, 0x82, 0x18, 0x13, 0x41, 0xfc, 0x24, 0x09, 0x1e, 0x18,
+	0x3f, 0xc9, 0x89, 0x8d, 0x8b, 0xa5, 0x20, 0x33, 0x39, 0xdb, 0x89, 0xe7, 0xc7, 0x43, 0x39, 0xc6,
+	0x15, 0x8f, 0xe4, 0x18, 0x77, 0x3c, 0x92, 0x63, 0x4c, 0x62, 0x03, 0x1b, 0x69, 0x0c, 0x08, 0x00,
+	0x00, 0xff, 0xff, 0x56, 0x58, 0x05, 0x27, 0xb8, 0x00, 0x00, 0x00,
 }

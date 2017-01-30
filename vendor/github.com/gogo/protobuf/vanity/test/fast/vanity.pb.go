@@ -26,15 +26,22 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+
 type A struct {
-	Strings          *string `protobuf:"bytes,1,opt,name=Strings" json:"Strings,omitempty"`
-	Int              *int64  `protobuf:"varint,2,req,name=Int" json:"Int,omitempty"`
+	Strings          *string `protobuf:"bytes,1,opt,name=Strings,json=strings" json:"Strings,omitempty"`
+	Int              *int64  `protobuf:"varint,2,req,name=Int,json=int" json:"Int,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *A) Reset()         { *m = A{} }
-func (m *A) String() string { return proto.CompactTextString(m) }
-func (*A) ProtoMessage()    {}
+func (m *A) Reset()                    { *m = A{} }
+func (m *A) String() string            { return proto.CompactTextString(m) }
+func (*A) ProtoMessage()               {}
+func (*A) Descriptor() ([]byte, []int) { return fileDescriptorVanity, []int{0} }
 
 func (m *A) GetStrings() string {
 	if m != nil && m.Strings != nil {
@@ -353,3 +360,16 @@ var (
 	ErrInvalidLengthVanity = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowVanity   = fmt.Errorf("proto: integer overflow")
 )
+
+func init() { proto.RegisterFile("vanity.proto", fileDescriptorVanity) }
+
+var fileDescriptorVanity = []byte{
+	// 101 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xe2, 0xe2, 0x29, 0x4b, 0xcc, 0xcb,
+	0x2c, 0xa9, 0xd4, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x83, 0xf0, 0x94, 0xf4, 0xb9, 0x18,
+	0x1d, 0x85, 0x24, 0xb8, 0xd8, 0x83, 0x4b, 0x8a, 0x32, 0xf3, 0xd2, 0x8b, 0x25, 0x18, 0x15, 0x18,
+	0x35, 0x38, 0x83, 0xd8, 0x8b, 0x21, 0x5c, 0x21, 0x01, 0x2e, 0x66, 0xcf, 0xbc, 0x12, 0x09, 0x26,
+	0x05, 0x26, 0x0d, 0xe6, 0x20, 0xe6, 0xcc, 0xbc, 0x12, 0x27, 0x9e, 0x13, 0x8f, 0xe4, 0x18, 0x2f,
+	0x3c, 0x92, 0x63, 0x7c, 0xf0, 0x48, 0x8e, 0x11, 0x10, 0x00, 0x00, 0xff, 0xff, 0xf9, 0x16, 0x19,
+	0x2a, 0x55, 0x00, 0x00, 0x00,
+}

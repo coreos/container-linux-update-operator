@@ -1,5 +1,7 @@
-// Copyright (c) 2013, Vastech SA (PTY) LTD. All rights reserved.
-// http://github.com/gogo/protobuf/gogoproto
+// Protocol Buffers for Go with Gadgets
+//
+// Copyright (c) 2013, The GoGo Authors. All rights reserved.
+// http://github.com/gogo/protobuf
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -53,6 +55,8 @@ option (gogoproto.enum_stringer_all) = true;
 
 option (gogoproto.unsafe_marshaler_all) = false;
 option (gogoproto.unsafe_unmarshaler_all) = false;
+
+option (gogoproto.compare_all) = true;
 
 message NidOptNative {
 	optional double Field1 = 1 [(gogoproto.nullable) = false];
@@ -348,43 +352,72 @@ enum TheTestEnum {
     C = 2;
 }
 
-message NidOptEnum {
-	optional TheTestEnum Field1 = 1 [(gogoproto.nullable) = false];
-}
-
-message NinOptEnum {
-	optional TheTestEnum Field1 = 1;
-}
-
-message NidRepEnum {
-	repeated TheTestEnum Field1 = 1 [(gogoproto.nullable) = false];
-}
-
-message NinRepEnum {
-	repeated TheTestEnum Field1 = 1;
-}
-
-message NinOptEnumDefault {
-	option (gogoproto.goproto_getters) = true;
-	option (gogoproto.face) = false;
-	optional TheTestEnum Field1 = 1  [default=C];
-}
-
 enum AnotherTestEnum {
 	option (gogoproto.goproto_enum_prefix) = false;
     D = 10;
     E = 11;
 }
 
+// YetAnotherTestEnum is used to test cross-package import of custom name
+// fields and default resolution.
+enum YetAnotherTestEnum {
+	option (gogoproto.goproto_enum_prefix) = false;
+	AA = 0;
+	BB = 1 [(gogoproto.enumvalue_customname) = "BetterYetBB"];
+}
+
+// YetAnotherTestEnum is used to test cross-package import of custom name
+// fields and default resolution.
+enum YetYetAnotherTestEnum {
+	option (gogoproto.goproto_enum_prefix) = true;
+	CC = 0;
+	DD = 1 [(gogoproto.enumvalue_customname) = "BetterYetDD"];
+}
+
+message NidOptEnum {
+	optional TheTestEnum Field1 = 1 [(gogoproto.nullable) = false];
+}
+
+message NinOptEnum {
+	optional TheTestEnum Field1 = 1;
+	optional YetAnotherTestEnum Field2 = 2;
+	optional YetYetAnotherTestEnum Field3 = 3;
+}
+
+message NidRepEnum {
+	repeated TheTestEnum Field1 = 1 [(gogoproto.nullable) = false];
+	repeated YetAnotherTestEnum Field2 = 2 [(gogoproto.nullable) = false];
+	repeated YetYetAnotherTestEnum Field3 = 3 [(gogoproto.nullable) = false];
+}
+
+message NinRepEnum {
+	repeated TheTestEnum Field1 = 1;
+	repeated YetAnotherTestEnum Field2 = 2;
+	repeated YetYetAnotherTestEnum Field3 = 3;
+}
+
+message NinOptEnumDefault {
+	option (gogoproto.goproto_getters) = true;
+	option (gogoproto.face) = false;
+	optional TheTestEnum Field1 = 1  [default=C];
+	optional YetAnotherTestEnum Field2 = 2 [default=BB];
+	optional YetYetAnotherTestEnum Field3 = 3 [default=CC];
+}
+
 message AnotherNinOptEnum {
 	optional AnotherTestEnum Field1 = 1;
+	optional YetAnotherTestEnum Field2 = 2;
+	optional YetYetAnotherTestEnum Field3 = 3;
 }
 
 message AnotherNinOptEnumDefault {
 	option (gogoproto.goproto_getters) = true;
 	option (gogoproto.face) = false;
 	optional AnotherTestEnum Field1 = 1 [default=E];
+	optional YetAnotherTestEnum Field2 = 2 [default=BB];
+	optional YetYetAnotherTestEnum Field3 = 3 [default=CC];
 }
+
 
 message Timer {
 	optional sfixed64 Time1 = 1 [(gogoproto.nullable) = false];
@@ -402,6 +435,8 @@ extend MyExtendable {
 	optional double FieldA = 100;
 	optional NinOptNative FieldB = 101;
 	optional NinEmbeddedStruct FieldC = 102;
+	repeated int64 FieldD = 104;
+	repeated NinOptNative FieldE = 105;
 }
 
 message OtherExtenable {

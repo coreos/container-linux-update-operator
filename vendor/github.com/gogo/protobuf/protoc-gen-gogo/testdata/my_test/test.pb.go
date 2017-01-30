@@ -24,13 +24,18 @@ package my_test
 import proto "github.com/gogo/protobuf/proto"
 import fmt "fmt"
 import math "math"
-
-// discarding unused import multitest2 "multi"
+import _ "multi"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 type HatType int32
 
@@ -65,6 +70,7 @@ func (x *HatType) UnmarshalJSON(data []byte) error {
 	*x = HatType(value)
 	return nil
 }
+func (HatType) EnumDescriptor() ([]byte, []int) { return fileDescriptorTest, []int{0} }
 
 // This enum represents days of the week.
 type Days int32
@@ -102,6 +108,7 @@ func (x *Days) UnmarshalJSON(data []byte) error {
 	*x = Days(value)
 	return nil
 }
+func (Days) EnumDescriptor() ([]byte, []int) { return fileDescriptorTest, []int{1} }
 
 type Request_Color int32
 
@@ -138,6 +145,7 @@ func (x *Request_Color) UnmarshalJSON(data []byte) error {
 	*x = Request_Color(value)
 	return nil
 }
+func (Request_Color) EnumDescriptor() ([]byte, []int) { return fileDescriptorTest, []int{0, 0} }
 
 type Reply_Entry_Game int32
 
@@ -171,6 +179,7 @@ func (x *Reply_Entry_Game) UnmarshalJSON(data []byte) error {
 	*x = Reply_Entry_Game(value)
 	return nil
 }
+func (Reply_Entry_Game) EnumDescriptor() ([]byte, []int) { return fileDescriptorTest, []int{1, 0, 0} }
 
 // This is a message that might be sent somewhere.
 type Request struct {
@@ -180,20 +189,21 @@ type Request struct {
 	Hat *HatType       `protobuf:"varint,4,opt,name=hat,enum=my.test.HatType,def=1" json:"hat,omitempty"`
 	//  optional imp.ImportedMessage.Owner owner = 6;
 	Deadline  *float32           `protobuf:"fixed32,7,opt,name=deadline,def=inf" json:"deadline,omitempty"`
-	Somegroup *Request_SomeGroup `protobuf:"group,8,opt,name=SomeGroup" json:"somegroup,omitempty"`
+	Somegroup *Request_SomeGroup `protobuf:"group,8,opt,name=SomeGroup,json=somegroup" json:"somegroup,omitempty"`
 	// This is a map field. It will generate map[int32]string.
-	NameMapping map[int32]string `protobuf:"bytes,14,rep,name=name_mapping" json:"name_mapping,omitempty" protobuf_key:"varint,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	NameMapping map[int32]string `protobuf:"bytes,14,rep,name=name_mapping,json=nameMapping" json:"name_mapping,omitempty" protobuf_key:"varint,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// This is a map field whose value type is a message.
-	MsgMapping map[int64]*Reply `protobuf:"bytes,15,rep,name=msg_mapping" json:"msg_mapping,omitempty" protobuf_key:"zigzag64,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	MsgMapping map[int64]*Reply `protobuf:"bytes,15,rep,name=msg_mapping,json=msgMapping" json:"msg_mapping,omitempty" protobuf_key:"zigzag64,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Reset_     *int32           `protobuf:"varint,12,opt,name=reset" json:"reset,omitempty"`
 	// This field should not conflict with any getters.
-	GetKey_          *string `protobuf:"bytes,16,opt,name=get_key" json:"get_key,omitempty"`
+	GetKey_          *string `protobuf:"bytes,16,opt,name=get_key,json=getKey" json:"get_key,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *Request) Reset()         { *m = Request{} }
-func (m *Request) String() string { return proto.CompactTextString(m) }
-func (*Request) ProtoMessage()    {}
+func (m *Request) Reset()                    { *m = Request{} }
+func (m *Request) String() string            { return proto.CompactTextString(m) }
+func (*Request) ProtoMessage()               {}
+func (*Request) Descriptor() ([]byte, []int) { return fileDescriptorTest, []int{0} }
 
 const Default_Request_Hat HatType = HatType_FEDORA
 
@@ -263,13 +273,14 @@ func (m *Request) GetGetKey_() string {
 }
 
 type Request_SomeGroup struct {
-	GroupField       *int32 `protobuf:"varint,9,opt,name=group_field" json:"group_field,omitempty"`
+	GroupField       *int32 `protobuf:"varint,9,opt,name=group_field,json=groupField" json:"group_field,omitempty"`
 	XXX_unrecognized []byte `json:"-"`
 }
 
-func (m *Request_SomeGroup) Reset()         { *m = Request_SomeGroup{} }
-func (m *Request_SomeGroup) String() string { return proto.CompactTextString(m) }
-func (*Request_SomeGroup) ProtoMessage()    {}
+func (m *Request_SomeGroup) Reset()                    { *m = Request_SomeGroup{} }
+func (m *Request_SomeGroup) String() string            { return proto.CompactTextString(m) }
+func (*Request_SomeGroup) ProtoMessage()               {}
+func (*Request_SomeGroup) Descriptor() ([]byte, []int) { return fileDescriptorTest, []int{0, 0} }
 
 func (m *Request_SomeGroup) GetGroupField() int32 {
 	if m != nil && m.GroupField != nil {
@@ -279,28 +290,23 @@ func (m *Request_SomeGroup) GetGroupField() int32 {
 }
 
 type Reply struct {
-	Found            []*Reply_Entry            `protobuf:"bytes,1,rep,name=found" json:"found,omitempty"`
-	CompactKeys      []int32                   `protobuf:"varint,2,rep,packed,name=compact_keys" json:"compact_keys,omitempty"`
-	XXX_extensions   map[int32]proto.Extension `json:"-"`
-	XXX_unrecognized []byte                    `json:"-"`
+	Found                        []*Reply_Entry `protobuf:"bytes,1,rep,name=found" json:"found,omitempty"`
+	CompactKeys                  []int32        `protobuf:"varint,2,rep,packed,name=compact_keys,json=compactKeys" json:"compact_keys,omitempty"`
+	proto.XXX_InternalExtensions `json:"-"`
+	XXX_unrecognized             []byte `json:"-"`
 }
 
-func (m *Reply) Reset()         { *m = Reply{} }
-func (m *Reply) String() string { return proto.CompactTextString(m) }
-func (*Reply) ProtoMessage()    {}
+func (m *Reply) Reset()                    { *m = Reply{} }
+func (m *Reply) String() string            { return proto.CompactTextString(m) }
+func (*Reply) ProtoMessage()               {}
+func (*Reply) Descriptor() ([]byte, []int) { return fileDescriptorTest, []int{1} }
 
 var extRange_Reply = []proto.ExtensionRange{
-	{100, 536870911},
+	{Start: 100, End: 536870911},
 }
 
 func (*Reply) ExtensionRangeArray() []proto.ExtensionRange {
 	return extRange_Reply
-}
-func (m *Reply) ExtensionMap() map[int32]proto.Extension {
-	if m.XXX_extensions == nil {
-		m.XXX_extensions = make(map[int32]proto.Extension)
-	}
-	return m.XXX_extensions
 }
 
 func (m *Reply) GetFound() []*Reply_Entry {
@@ -318,15 +324,16 @@ func (m *Reply) GetCompactKeys() []int32 {
 }
 
 type Reply_Entry struct {
-	KeyThatNeeds_1234Camel_CasIng *int64 `protobuf:"varint,1,req,name=key_that_needs_1234camel_CasIng" json:"key_that_needs_1234camel_CasIng,omitempty"`
+	KeyThatNeeds_1234Camel_CasIng *int64 `protobuf:"varint,1,req,name=key_that_needs_1234camel_CasIng,json=keyThatNeeds1234camelCasIng" json:"key_that_needs_1234camel_CasIng,omitempty"`
 	Value                         *int64 `protobuf:"varint,2,opt,name=value,def=7" json:"value,omitempty"`
-	XMyFieldName_2                *int64 `protobuf:"varint,3,opt,name=_my_field_name_2" json:"_my_field_name_2,omitempty"`
+	XMyFieldName_2                *int64 `protobuf:"varint,3,opt,name=_my_field_name_2,json=myFieldName2" json:"_my_field_name_2,omitempty"`
 	XXX_unrecognized              []byte `json:"-"`
 }
 
-func (m *Reply_Entry) Reset()         { *m = Reply_Entry{} }
-func (m *Reply_Entry) String() string { return proto.CompactTextString(m) }
-func (*Reply_Entry) ProtoMessage()    {}
+func (m *Reply_Entry) Reset()                    { *m = Reply_Entry{} }
+func (m *Reply_Entry) String() string            { return proto.CompactTextString(m) }
+func (*Reply_Entry) ProtoMessage()               {}
+func (*Reply_Entry) Descriptor() ([]byte, []int) { return fileDescriptorTest, []int{1, 0} }
 
 const Default_Reply_Entry_Value int64 = 7
 
@@ -352,27 +359,22 @@ func (m *Reply_Entry) GetXMyFieldName_2() int64 {
 }
 
 type OtherBase struct {
-	Name             *string                   `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	XXX_extensions   map[int32]proto.Extension `json:"-"`
-	XXX_unrecognized []byte                    `json:"-"`
+	Name                         *string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	proto.XXX_InternalExtensions `json:"-"`
+	XXX_unrecognized             []byte `json:"-"`
 }
 
-func (m *OtherBase) Reset()         { *m = OtherBase{} }
-func (m *OtherBase) String() string { return proto.CompactTextString(m) }
-func (*OtherBase) ProtoMessage()    {}
+func (m *OtherBase) Reset()                    { *m = OtherBase{} }
+func (m *OtherBase) String() string            { return proto.CompactTextString(m) }
+func (*OtherBase) ProtoMessage()               {}
+func (*OtherBase) Descriptor() ([]byte, []int) { return fileDescriptorTest, []int{2} }
 
 var extRange_OtherBase = []proto.ExtensionRange{
-	{100, 536870911},
+	{Start: 100, End: 536870911},
 }
 
 func (*OtherBase) ExtensionRangeArray() []proto.ExtensionRange {
 	return extRange_OtherBase
-}
-func (m *OtherBase) ExtensionMap() map[int32]proto.Extension {
-	if m.XXX_extensions == nil {
-		m.XXX_extensions = make(map[int32]proto.Extension)
-	}
-	return m.XXX_extensions
 }
 
 func (m *OtherBase) GetName() string {
@@ -386,9 +388,10 @@ type ReplyExtensions struct {
 	XXX_unrecognized []byte `json:"-"`
 }
 
-func (m *ReplyExtensions) Reset()         { *m = ReplyExtensions{} }
-func (m *ReplyExtensions) String() string { return proto.CompactTextString(m) }
-func (*ReplyExtensions) ProtoMessage()    {}
+func (m *ReplyExtensions) Reset()                    { *m = ReplyExtensions{} }
+func (m *ReplyExtensions) String() string            { return proto.CompactTextString(m) }
+func (*ReplyExtensions) ProtoMessage()               {}
+func (*ReplyExtensions) Descriptor() ([]byte, []int) { return fileDescriptorTest, []int{3} }
 
 var E_ReplyExtensions_Time = &proto.ExtensionDesc{
 	ExtendedType:  (*Reply)(nil),
@@ -419,9 +422,10 @@ type OtherReplyExtensions struct {
 	XXX_unrecognized []byte `json:"-"`
 }
 
-func (m *OtherReplyExtensions) Reset()         { *m = OtherReplyExtensions{} }
-func (m *OtherReplyExtensions) String() string { return proto.CompactTextString(m) }
-func (*OtherReplyExtensions) ProtoMessage()    {}
+func (m *OtherReplyExtensions) Reset()                    { *m = OtherReplyExtensions{} }
+func (m *OtherReplyExtensions) String() string            { return proto.CompactTextString(m) }
+func (*OtherReplyExtensions) ProtoMessage()               {}
+func (*OtherReplyExtensions) Descriptor() ([]byte, []int) { return fileDescriptorTest, []int{4} }
 
 func (m *OtherReplyExtensions) GetKey() int32 {
 	if m != nil && m.Key != nil {
@@ -431,25 +435,26 @@ func (m *OtherReplyExtensions) GetKey() int32 {
 }
 
 type OldReply struct {
-	XXX_extensions   map[int32]proto.Extension `json:"-"`
-	XXX_unrecognized []byte                    `json:"-"`
+	proto.XXX_InternalExtensions `json:"-"`
+	XXX_unrecognized             []byte `json:"-"`
 }
 
-func (m *OldReply) Reset()         { *m = OldReply{} }
-func (m *OldReply) String() string { return proto.CompactTextString(m) }
-func (*OldReply) ProtoMessage()    {}
+func (m *OldReply) Reset()                    { *m = OldReply{} }
+func (m *OldReply) String() string            { return proto.CompactTextString(m) }
+func (*OldReply) ProtoMessage()               {}
+func (*OldReply) Descriptor() ([]byte, []int) { return fileDescriptorTest, []int{5} }
 
 func (m *OldReply) Marshal() ([]byte, error) {
-	return proto.MarshalMessageSet(m.ExtensionMap())
+	return proto.MarshalMessageSet(&m.XXX_InternalExtensions)
 }
 func (m *OldReply) Unmarshal(buf []byte) error {
-	return proto.UnmarshalMessageSet(buf, m.ExtensionMap())
+	return proto.UnmarshalMessageSet(buf, &m.XXX_InternalExtensions)
 }
 func (m *OldReply) MarshalJSON() ([]byte, error) {
-	return proto.MarshalMessageSetJSON(m.XXX_extensions)
+	return proto.MarshalMessageSetJSON(&m.XXX_InternalExtensions)
 }
 func (m *OldReply) UnmarshalJSON(buf []byte) error {
-	return proto.UnmarshalMessageSetJSON(buf, m.XXX_extensions)
+	return proto.UnmarshalMessageSetJSON(buf, &m.XXX_InternalExtensions)
 }
 
 // ensure OldReply satisfies proto.Marshaler and proto.Unmarshaler
@@ -457,21 +462,15 @@ var _ proto.Marshaler = (*OldReply)(nil)
 var _ proto.Unmarshaler = (*OldReply)(nil)
 
 var extRange_OldReply = []proto.ExtensionRange{
-	{100, 2147483646},
+	{Start: 100, End: 2147483646},
 }
 
 func (*OldReply) ExtensionRangeArray() []proto.ExtensionRange {
 	return extRange_OldReply
 }
-func (m *OldReply) ExtensionMap() map[int32]proto.Extension {
-	if m.XXX_extensions == nil {
-		m.XXX_extensions = make(map[int32]proto.Extension)
-	}
-	return m.XXX_extensions
-}
 
 type Communique struct {
-	MakeMeCry *bool `protobuf:"varint,1,opt,name=make_me_cry" json:"make_me_cry,omitempty"`
+	MakeMeCry *bool `protobuf:"varint,1,opt,name=make_me_cry,json=makeMeCry" json:"make_me_cry,omitempty"`
 	// This is a oneof, called "union".
 	//
 	// Types that are valid to be assigned to Union:
@@ -489,9 +488,10 @@ type Communique struct {
 	XXX_unrecognized []byte             `json:"-"`
 }
 
-func (m *Communique) Reset()         { *m = Communique{} }
-func (m *Communique) String() string { return proto.CompactTextString(m) }
-func (*Communique) ProtoMessage()    {}
+func (m *Communique) Reset()                    { *m = Communique{} }
+func (m *Communique) String() string            { return proto.CompactTextString(m) }
+func (*Communique) ProtoMessage()               {}
+func (*Communique) Descriptor() ([]byte, []int) { return fileDescriptorTest, []int{6} }
 
 type isCommunique_Union interface {
 	isCommunique_Union()
@@ -507,7 +507,7 @@ type Communique_Data struct {
 	Data []byte `protobuf:"bytes,7,opt,name=data,oneof"`
 }
 type Communique_TempC struct {
-	TempC float64 `protobuf:"fixed64,8,opt,name=temp_c,oneof"`
+	TempC float64 `protobuf:"fixed64,8,opt,name=temp_c,json=tempC,oneof"`
 }
 type Communique_Height struct {
 	Height float32 `protobuf:"fixed32,9,opt,name=height,oneof"`
@@ -525,7 +525,7 @@ type Communique_Msg struct {
 	Msg *Reply `protobuf:"bytes,13,opt,name=msg,oneof"`
 }
 type Communique_Somegroup struct {
-	Somegroup *Communique_SomeGroup `protobuf:"group,14,opt,name=SomeGroup,oneof"`
+	Somegroup *Communique_SomeGroup `protobuf:"group,14,opt,name=SomeGroup,json=somegroup,oneof"`
 }
 
 func (*Communique_Number) isCommunique_Union()    {}
@@ -624,8 +624,8 @@ func (m *Communique) GetSomegroup() *Communique_SomeGroup {
 }
 
 // XXX_OneofFuncs is for the internal use of the proto package.
-func (*Communique) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), []interface{}) {
-	return _Communique_OneofMarshaler, _Communique_OneofUnmarshaler, []interface{}{
+func (*Communique) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
+	return _Communique_OneofMarshaler, _Communique_OneofUnmarshaler, _Communique_OneofSizer, []interface{}{
 		(*Communique_Number)(nil),
 		(*Communique_Name)(nil),
 		(*Communique_Data)(nil),
@@ -769,14 +769,61 @@ func _Communique_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buf
 	}
 }
 
+func _Communique_OneofSizer(msg proto.Message) (n int) {
+	m := msg.(*Communique)
+	// union
+	switch x := m.Union.(type) {
+	case *Communique_Number:
+		n += proto.SizeVarint(5<<3 | proto.WireVarint)
+		n += proto.SizeVarint(uint64(x.Number))
+	case *Communique_Name:
+		n += proto.SizeVarint(6<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(len(x.Name)))
+		n += len(x.Name)
+	case *Communique_Data:
+		n += proto.SizeVarint(7<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(len(x.Data)))
+		n += len(x.Data)
+	case *Communique_TempC:
+		n += proto.SizeVarint(8<<3 | proto.WireFixed64)
+		n += 8
+	case *Communique_Height:
+		n += proto.SizeVarint(9<<3 | proto.WireFixed32)
+		n += 4
+	case *Communique_Today:
+		n += proto.SizeVarint(10<<3 | proto.WireVarint)
+		n += proto.SizeVarint(uint64(x.Today))
+	case *Communique_Maybe:
+		n += proto.SizeVarint(11<<3 | proto.WireVarint)
+		n += 1
+	case *Communique_Delta_:
+		n += proto.SizeVarint(12<<3 | proto.WireVarint)
+		n += proto.SizeVarint(uint64((uint32(x.Delta) << 1) ^ uint32((int32(x.Delta) >> 31))))
+	case *Communique_Msg:
+		s := proto.Size(x.Msg)
+		n += proto.SizeVarint(13<<3 | proto.WireBytes)
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Communique_Somegroup:
+		n += proto.SizeVarint(14<<3 | proto.WireStartGroup)
+		n += proto.Size(x.Somegroup)
+		n += proto.SizeVarint(14<<3 | proto.WireEndGroup)
+	case nil:
+	default:
+		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
+	}
+	return n
+}
+
 type Communique_SomeGroup struct {
 	Member           *string `protobuf:"bytes,15,opt,name=member" json:"member,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *Communique_SomeGroup) Reset()         { *m = Communique_SomeGroup{} }
-func (m *Communique_SomeGroup) String() string { return proto.CompactTextString(m) }
-func (*Communique_SomeGroup) ProtoMessage()    {}
+func (m *Communique_SomeGroup) Reset()                    { *m = Communique_SomeGroup{} }
+func (m *Communique_SomeGroup) String() string            { return proto.CompactTextString(m) }
+func (*Communique_SomeGroup) ProtoMessage()               {}
+func (*Communique_SomeGroup) Descriptor() ([]byte, []int) { return fileDescriptorTest, []int{6, 0} }
 
 func (m *Communique_SomeGroup) GetMember() string {
 	if m != nil && m.Member != nil {
@@ -789,9 +836,10 @@ type Communique_Delta struct {
 	XXX_unrecognized []byte `json:"-"`
 }
 
-func (m *Communique_Delta) Reset()         { *m = Communique_Delta{} }
-func (m *Communique_Delta) String() string { return proto.CompactTextString(m) }
-func (*Communique_Delta) ProtoMessage()    {}
+func (m *Communique_Delta) Reset()                    { *m = Communique_Delta{} }
+func (m *Communique_Delta) String() string            { return proto.CompactTextString(m) }
+func (*Communique_Delta) ProtoMessage()               {}
+func (*Communique_Delta) Descriptor() ([]byte, []int) { return fileDescriptorTest, []int{6, 1} }
 
 var E_Tag = &proto.ExtensionDesc{
 	ExtendedType:  (*Reply)(nil),
@@ -830,4 +878,72 @@ func init() {
 	proto.RegisterExtension(E_ReplyExtensions_Donut)
 	proto.RegisterExtension(E_Tag)
 	proto.RegisterExtension(E_Donut)
+}
+
+func init() { proto.RegisterFile("my_test/test.proto", fileDescriptorTest) }
+
+var fileDescriptorTest = []byte{
+	// 988 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x7c, 0x54, 0xdd, 0x6e, 0xe3, 0x44,
+	0x14, 0xce, 0xd8, 0x71, 0x7e, 0x4e, 0xb2, 0xad, 0x19, 0x55, 0xad, 0x15, 0xb4, 0x5b, 0x13, 0x28,
+	0x32, 0x15, 0xca, 0x6a, 0x0d, 0x12, 0xab, 0x48, 0x20, 0x9a, 0x9f, 0x36, 0xd5, 0xb6, 0x89, 0x34,
+	0x6d, 0x2f, 0xe0, 0xc6, 0x9a, 0x8d, 0xa7, 0x8e, 0x69, 0xc6, 0xce, 0xda, 0x63, 0x84, 0xef, 0xfa,
+	0x14, 0xf0, 0x1a, 0xdc, 0xf3, 0x42, 0xbc, 0x45, 0xd1, 0x8c, 0x43, 0x92, 0x26, 0xab, 0xbd, 0xb1,
+	0x7c, 0xbe, 0xf9, 0xce, 0xe7, 0x39, 0x3f, 0xfe, 0x00, 0xf3, 0xdc, 0x13, 0x2c, 0x15, 0xaf, 0xe5,
+	0xa3, 0xb3, 0x48, 0x62, 0x11, 0xe3, 0x2a, 0xcf, 0x3b, 0x32, 0x6c, 0x61, 0x9e, 0xcd, 0x45, 0xf8,
+	0x5a, 0x3d, 0xdf, 0x14, 0x87, 0xed, 0x7f, 0xcb, 0x50, 0x25, 0xec, 0x43, 0xc6, 0x52, 0x81, 0x4d,
+	0xd0, 0x1f, 0x58, 0x6e, 0x21, 0x5b, 0x77, 0x74, 0x22, 0x5f, 0xb1, 0x03, 0xfa, 0x2c, 0x63, 0x96,
+	0x6e, 0x23, 0x67, 0xcf, 0x3d, 0xec, 0x2c, 0x85, 0x3a, 0xcb, 0x84, 0x4e, 0x3f, 0x9e, 0xc7, 0x09,
+	0x91, 0x14, 0x7c, 0x0a, 0xfa, 0x8c, 0x0a, 0xab, 0xac, 0x98, 0xe6, 0x8a, 0x39, 0xa2, 0xe2, 0x36,
+	0x5f, 0xb0, 0x6e, 0xe5, 0x7c, 0x38, 0x98, 0x90, 0x33, 0x22, 0x49, 0xf8, 0x18, 0x6a, 0x3e, 0xa3,
+	0xfe, 0x3c, 0x8c, 0x98, 0x55, 0xb5, 0x91, 0xa3, 0x75, 0xf5, 0x30, 0xba, 0x27, 0x2b, 0x10, 0xbf,
+	0x85, 0x7a, 0x1a, 0x73, 0x16, 0x24, 0x71, 0xb6, 0xb0, 0x6a, 0x36, 0x72, 0xc0, 0x6d, 0xed, 0x7c,
+	0xfc, 0x26, 0xe6, 0xec, 0x42, 0x32, 0xc8, 0x9a, 0x8c, 0x07, 0xd0, 0x8c, 0x28, 0x67, 0x1e, 0xa7,
+	0x8b, 0x45, 0x18, 0x05, 0xd6, 0x9e, 0xad, 0x3b, 0x0d, 0xf7, 0x8b, 0x9d, 0xe4, 0x31, 0xe5, 0xec,
+	0xba, 0xe0, 0x0c, 0x23, 0x91, 0xe4, 0xa4, 0x11, 0xad, 0x11, 0x7c, 0x06, 0x0d, 0x9e, 0x06, 0x2b,
+	0x91, 0x7d, 0x25, 0x62, 0xef, 0x88, 0x5c, 0xa7, 0xc1, 0x33, 0x0d, 0xe0, 0x2b, 0x00, 0x1f, 0x80,
+	0x91, 0xb0, 0x94, 0x09, 0xab, 0x69, 0x23, 0xc7, 0x20, 0x45, 0x80, 0x8f, 0xa0, 0x1a, 0x30, 0xe1,
+	0xc9, 0x2e, 0x9b, 0x36, 0x72, 0xea, 0xa4, 0x12, 0x30, 0xf1, 0x8e, 0xe5, 0xad, 0x6f, 0xa1, 0xbe,
+	0xaa, 0x07, 0x1f, 0x43, 0x43, 0x55, 0xe3, 0xdd, 0x87, 0x6c, 0xee, 0x5b, 0x75, 0xa5, 0x00, 0x0a,
+	0x3a, 0x97, 0x48, 0xeb, 0x27, 0x30, 0xb7, 0x0b, 0x58, 0x0f, 0x4f, 0x92, 0xd5, 0xf0, 0x0e, 0xc0,
+	0xf8, 0x9d, 0xce, 0x33, 0x66, 0x69, 0xea, 0x53, 0x45, 0xd0, 0xd5, 0xde, 0xa2, 0xd6, 0x35, 0xec,
+	0x6f, 0xdd, 0x7d, 0x33, 0x1d, 0x17, 0xe9, 0x5f, 0x6d, 0xa6, 0x37, 0xdc, 0xbd, 0x8d, 0xf2, 0x17,
+	0xf3, 0x7c, 0x43, 0xae, 0x7d, 0x02, 0x86, 0xda, 0x04, 0x5c, 0x05, 0x9d, 0x0c, 0x07, 0x66, 0x09,
+	0xd7, 0xc1, 0xb8, 0x20, 0xc3, 0xe1, 0xd8, 0x44, 0xb8, 0x06, 0xe5, 0xde, 0xd5, 0xdd, 0xd0, 0xd4,
+	0xda, 0x7f, 0x69, 0x60, 0xa8, 0x5c, 0x7c, 0x0a, 0xc6, 0x7d, 0x9c, 0x45, 0xbe, 0x5a, 0xb5, 0x86,
+	0x7b, 0xf0, 0x5c, 0xba, 0x53, 0x74, 0xb3, 0xa0, 0xe0, 0x13, 0x68, 0x4e, 0x63, 0xbe, 0xa0, 0x53,
+	0xd5, 0xb6, 0xd4, 0xd2, 0x6c, 0xdd, 0x31, 0x7a, 0x9a, 0x89, 0x48, 0x63, 0x89, 0xbf, 0x63, 0x79,
+	0xda, 0xfa, 0x1b, 0x81, 0x51, 0x54, 0x32, 0x80, 0xe3, 0x07, 0x96, 0x7b, 0x62, 0x46, 0x85, 0x17,
+	0x31, 0xe6, 0xa7, 0xde, 0x1b, 0xf7, 0xbb, 0xef, 0xa7, 0x94, 0xb3, 0xb9, 0xd7, 0xa7, 0xe9, 0x65,
+	0x14, 0x58, 0xc8, 0xd6, 0x1c, 0x9d, 0x7c, 0xfe, 0xc0, 0xf2, 0xdb, 0x19, 0x15, 0x63, 0x49, 0x5a,
+	0x71, 0x0a, 0x0a, 0x3e, 0xda, 0xac, 0x5e, 0xef, 0xa2, 0x1f, 0x96, 0x05, 0xe3, 0xaf, 0xc1, 0xf4,
+	0x78, 0x5e, 0x8c, 0xc6, 0x53, 0xbb, 0xe6, 0xaa, 0xff, 0x43, 0x27, 0x4d, 0x9e, 0xab, 0xf1, 0xc8,
+	0xd1, 0xb8, 0x6d, 0x1b, 0xca, 0x17, 0x94, 0x33, 0xdc, 0x84, 0xda, 0xf9, 0x64, 0x72, 0xdb, 0x3b,
+	0xbb, 0xba, 0x32, 0x11, 0x06, 0xa8, 0xdc, 0x0e, 0xc7, 0xe3, 0xcb, 0x1b, 0x53, 0x3b, 0xad, 0xd5,
+	0x7c, 0xf3, 0xf1, 0xf1, 0xf1, 0x51, 0x6b, 0x7f, 0x03, 0xf5, 0x89, 0x98, 0xb1, 0xa4, 0x47, 0x53,
+	0x86, 0x31, 0x94, 0xa5, 0xac, 0x1a, 0x45, 0x9d, 0xa8, 0xf7, 0x0d, 0xea, 0x3f, 0x08, 0xf6, 0x55,
+	0x97, 0x86, 0x7f, 0x08, 0x16, 0xa5, 0x61, 0x1c, 0xa5, 0x6e, 0x1b, 0xca, 0x22, 0xe4, 0x0c, 0x6f,
+	0x8d, 0xc8, 0x62, 0x36, 0x72, 0x10, 0x51, 0x67, 0xee, 0xcf, 0x50, 0x99, 0xd2, 0x24, 0x89, 0xc5,
+	0x0e, 0x2b, 0x54, 0xe3, 0xb5, 0x9e, 0xa3, 0x6b, 0x75, 0xb2, 0xcc, 0x73, 0x7b, 0x60, 0xf8, 0x71,
+	0x94, 0x09, 0x8c, 0x57, 0xd4, 0xd5, 0xa5, 0xd5, 0xa7, 0x3e, 0x25, 0x52, 0xa4, 0xb6, 0x1d, 0x38,
+	0x50, 0x39, 0x5b, 0xc7, 0xbb, 0xcb, 0xdb, 0xb6, 0xa0, 0x36, 0x99, 0xfb, 0x8a, 0xa7, 0xaa, 0x7f,
+	0x7a, 0x7a, 0x7a, 0xaa, 0x76, 0xb5, 0x1a, 0x6a, 0xff, 0xa9, 0x03, 0xf4, 0x63, 0xce, 0xb3, 0x28,
+	0xfc, 0x90, 0x31, 0xfc, 0x0a, 0x1a, 0x9c, 0x3e, 0x30, 0x8f, 0x33, 0x6f, 0x9a, 0x14, 0x12, 0x35,
+	0x52, 0x97, 0xd0, 0x35, 0xeb, 0x27, 0x39, 0xb6, 0xa0, 0x12, 0x65, 0xfc, 0x3d, 0x4b, 0x2c, 0x43,
+	0xaa, 0x8f, 0x4a, 0x64, 0x19, 0xe3, 0x83, 0x65, 0xa3, 0x2b, 0xb2, 0xd1, 0xa3, 0x52, 0xd1, 0x6a,
+	0x89, 0xfa, 0x54, 0x50, 0x65, 0x4c, 0x4d, 0x89, 0xca, 0x08, 0x1f, 0x41, 0x45, 0x30, 0xbe, 0xf0,
+	0xa6, 0xca, 0x8e, 0xd0, 0xa8, 0x44, 0x0c, 0x19, 0xf7, 0xa5, 0xfc, 0x8c, 0x85, 0xc1, 0x4c, 0xa8,
+	0xdf, 0x54, 0x93, 0xf2, 0x45, 0x8c, 0x4f, 0xc0, 0x10, 0xb1, 0x4f, 0x73, 0x0b, 0x94, 0x27, 0xbe,
+	0x58, 0xf5, 0x66, 0x40, 0xf3, 0x54, 0x09, 0xc8, 0x53, 0x7c, 0x08, 0x06, 0xa7, 0xf9, 0x7b, 0x66,
+	0x35, 0xe4, 0xcd, 0x25, 0xae, 0x42, 0x89, 0xfb, 0x6c, 0x2e, 0xa8, 0x32, 0x90, 0xcf, 0x24, 0xae,
+	0x42, 0xdc, 0x06, 0x9d, 0xa7, 0x81, 0xf5, 0xe2, 0x63, 0x3f, 0xe5, 0xa8, 0x44, 0xe4, 0x21, 0xfe,
+	0x71, 0xd3, 0x3f, 0xf7, 0x94, 0x7f, 0xbe, 0x5c, 0x31, 0xd7, 0xbd, 0x5b, 0x5b, 0xe8, 0xa8, 0xb4,
+	0x61, 0xa2, 0xad, 0x2f, 0x37, 0xcd, 0xe8, 0x10, 0x2a, 0x9c, 0xa9, 0xfe, 0xed, 0x17, 0x8e, 0x55,
+	0x44, 0xad, 0x2a, 0x18, 0x03, 0x79, 0xa1, 0x5e, 0x15, 0x8c, 0x2c, 0x0a, 0xe3, 0xe8, 0xf4, 0x15,
+	0x54, 0x97, 0x76, 0x2f, 0xd7, 0xbc, 0x30, 0x7c, 0x13, 0x49, 0x53, 0x38, 0x1f, 0xfe, 0x6a, 0x6a,
+	0xa7, 0x1d, 0x28, 0xcb, 0xd2, 0xe5, 0xe1, 0xf5, 0x64, 0x3c, 0x38, 0xfb, 0xc5, 0x44, 0xb8, 0x01,
+	0xd5, 0xdb, 0xbb, 0xe1, 0x8d, 0x0c, 0x34, 0xe9, 0x1a, 0x57, 0x77, 0xe3, 0xc1, 0xa5, 0x89, 0x5a,
+	0x9a, 0x89, 0xba, 0x36, 0xe8, 0x82, 0x06, 0x3b, 0xfb, 0x1a, 0xa8, 0x6b, 0xc8, 0xa3, 0x6e, 0xff,
+	0xff, 0x95, 0xdc, 0xe6, 0xfc, 0xa6, 0xba, 0xf3, 0xf2, 0xf9, 0xa2, 0x7e, 0x7c, 0x27, 0xff, 0x0b,
+	0x00, 0x00, 0xff, 0xff, 0xc7, 0xad, 0x0f, 0xe3, 0x33, 0x07, 0x00, 0x00,
 }

@@ -1,5 +1,7 @@
-// Copyright (c) 2013, Vastech SA (PTY) LTD. All rights reserved.
-// http://github.com/gogo/protobuf/gogoproto
+// Protocol Buffers for Go with Gadgets
+//
+// Copyright (c) 2013, The GoGo Authors. All rights reserved.
+// http://github.com/gogo/protobuf
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -65,7 +67,7 @@ func (this MixMatch) Gen(folder string, news []string) {
 			panic(fmt.Errorf("found another string {%s} after it was replaced with {%s}", old, news[i]))
 		}
 	}
-	if err := ioutil.WriteFile(filepath.Join(folder, this.Filename), []byte(content), 0666); err != nil {
+	if err = ioutil.WriteFile(filepath.Join(folder, this.Filename), []byte(content), 0666); err != nil {
 		panic(err)
 	}
 	args := append([]string{"--gogo_out=" + this.Plugins + "."}, this.Args...)

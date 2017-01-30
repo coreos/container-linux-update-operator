@@ -1,4 +1,6 @@
-// Copyright (c) 2013, Vastech SA (PTY) LTD. All rights reserved.
+// Protocol Buffers for Go with Gadgets
+//
+// Copyright (c) 2013, The GoGo Authors. All rights reserved.
 // http://github.com/gogo/protobuf
 //
 // Redistribution and use in source and binary forms, with or without
@@ -127,13 +129,22 @@ func (file *FileDescriptorProto) GetMessage(typeName string) *DescriptorProto {
 		if msg.GetName() == typeName {
 			return msg
 		}
-		for _, nes := range msg.GetNestedType() {
-			if nes.GetName() == typeName {
-				return nes
-			}
-			if msg.GetName()+"."+nes.GetName() == typeName {
-				return nes
-			}
+		nes := file.GetNestedMessage(msg, strings.TrimPrefix(typeName, msg.GetName()+"."))
+		if nes != nil {
+			return nes
+		}
+	}
+	return nil
+}
+
+func (file *FileDescriptorProto) GetNestedMessage(msg *DescriptorProto, typeName string) *DescriptorProto {
+	for _, nes := range msg.GetNestedType() {
+		if nes.GetName() == typeName {
+			return nes
+		}
+		res := file.GetNestedMessage(nes, strings.TrimPrefix(typeName, nes.GetName()+"."))
+		if res != nil {
+			return res
 		}
 	}
 	return nil
@@ -327,6 +338,10 @@ func (f *FieldDescriptorProto) IsRepeated() bool {
 
 func (f *FieldDescriptorProto) IsString() bool {
 	return *f.Type == FieldDescriptorProto_TYPE_STRING
+}
+
+func (f *FieldDescriptorProto) IsBool() bool {
+	return *f.Type == FieldDescriptorProto_TYPE_BOOL
 }
 
 func (f *FieldDescriptorProto) IsRequired() bool {

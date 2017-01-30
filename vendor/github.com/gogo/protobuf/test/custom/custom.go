@@ -1,4 +1,6 @@
-// Copyright (c) 2013, Vastech SA (PTY) LTD. All rights reserved.
+// Protocol Buffers for Go with Gadgets
+//
+// Copyright (c) 2013, The GoGo Authors. All rights reserved.
 // http://github.com/gogo/protobuf
 //
 // Redistribution and use in source and binary forms, with or without
@@ -31,6 +33,7 @@
 package custom
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"unsafe"
@@ -101,7 +104,7 @@ func (u Uint128) MarshalJSON() ([]byte, error) {
 	return json.Marshal(data)
 }
 
-func (u *Uint128) Size() int {
+func (u Uint128) Size() int {
 	return 16
 }
 
@@ -116,6 +119,18 @@ func (u *Uint128) UnmarshalJSON(data []byte) error {
 
 func (this Uint128) Equal(that Uint128) bool {
 	return this == that
+}
+
+func (this Uint128) Compare(that Uint128) int {
+	thisdata, err := this.Marshal()
+	if err != nil {
+		panic(err)
+	}
+	thatdata, err := that.Marshal()
+	if err != nil {
+		panic(err)
+	}
+	return bytes.Compare(thisdata, thatdata)
 }
 
 type randy interface {

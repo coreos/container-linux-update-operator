@@ -1,4 +1,6 @@
-// Copyright (c) 2013, Vastech SA (PTY) LTD. All rights reserved.
+// Protocol Buffers for Go with Gadgets
+//
+// Copyright (c) 2013, The GoGo Authors. All rights reserved.
 // http://github.com/gogo/protobuf
 //
 // Redistribution and use in source and binary forms, with or without
@@ -248,7 +250,7 @@ func (p *plugin) GenerateField(file *generator.FileDescriptor, message *generato
 		}
 		if m.ValueField.IsMessage() || p.IsGroup(field) {
 			s := `this.` + fieldname + `[` + keyval + `] = `
-			goTypName := generator.GoTypeToName(valuegoTyp)
+			goTypName = generator.GoTypeToName(valuegoTyp)
 			funcCall := getFuncCall(goTypName)
 			if !nullable {
 				funcCall = `*` + funcCall

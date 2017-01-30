@@ -1,5 +1,7 @@
-// Copyright (c) 2013, Vastech SA (PTY) LTD. All rights reserved.
-// http://github.com/gogo/protobuf/gogoproto
+// Protocol Buffers for Go with Gadgets
+//
+// Copyright (c) 2013, The GoGo Authors. All rights reserved.
+// http://github.com/gogo/protobuf
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -45,7 +47,7 @@ func (this *MixMatch) Regenerate() {
 	if err != nil {
 		panic(err)
 	}
-	if err := ioutil.WriteFile("./testdata/uuid.go", uuidData, 0666); err != nil {
+	if err = ioutil.WriteFile("./testdata/uuid.go", uuidData, 0666); err != nil {
 		panic(err)
 	}
 	data, err := ioutil.ReadFile("../thetest.proto")
@@ -56,7 +58,7 @@ func (this *MixMatch) Regenerate() {
 	for i, old := range this.Old {
 		content = strings.Replace(content, old, this.New[i], -1)
 	}
-	if err := ioutil.WriteFile("./testdata/thetest.proto", []byte(content), 0666); err != nil {
+	if err = ioutil.WriteFile("./testdata/thetest.proto", []byte(content), 0666); err != nil {
 		panic(err)
 	}
 	var regenerate = exec.Command("protoc", "--gogo_out=.", "-I=../../:../../protobuf/:../../../../../:.", "./testdata/thetest.proto")

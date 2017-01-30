@@ -30,12 +30,19 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+
 type Aproto3 struct {
-	B string `protobuf:"bytes,1,opt,name=B,proto3" json:"B,omitempty"`
+	B string `protobuf:"bytes,1,opt,name=B,json=b,proto3" json:"B,omitempty"`
 }
 
-func (m *Aproto3) Reset()      { *m = Aproto3{} }
-func (*Aproto3) ProtoMessage() {}
+func (m *Aproto3) Reset()                    { *m = Aproto3{} }
+func (*Aproto3) ProtoMessage()               {}
+func (*Aproto3) Descriptor() ([]byte, []int) { return fileDescriptorProto3, []int{0} }
 
 func init() {
 	proto.RegisterType((*Aproto3)(nil), "vanity.Aproto3")
@@ -88,11 +95,12 @@ func valueToGoStringProto3(v interface{}, typ string) string {
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("func(v %v) *%v { return &v } ( %#v )", typ, typ, pv)
 }
-func extensionToGoStringProto3(e map[int32]github_com_gogo_protobuf_proto.Extension) string {
+func extensionToGoStringProto3(m github_com_gogo_protobuf_proto.Message) string {
+	e := github_com_gogo_protobuf_proto.GetUnsafeExtensionsMap(m)
 	if e == nil {
 		return "nil"
 	}
-	s := "map[int32]proto.Extension{"
+	s := "proto.NewUnsafeXXX_InternalExtensions(map[int32]proto.Extension{"
 	keys := make([]int, 0, len(e))
 	for k := range e {
 		keys = append(keys, int(k))
@@ -102,7 +110,7 @@ func extensionToGoStringProto3(e map[int32]github_com_gogo_protobuf_proto.Extens
 	for _, k := range keys {
 		ss = append(ss, strconv.Itoa(k)+": "+e[int32(k)].GoString())
 	}
-	s += strings.Join(ss, ",") + "}"
+	s += strings.Join(ss, ",") + "})"
 	return s
 }
 func (m *Aproto3) Marshal() (data []byte, err error) {
@@ -380,3 +388,17 @@ var (
 	ErrInvalidLengthProto3 = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowProto3   = fmt.Errorf("proto: integer overflow")
 )
+
+func init() { proto.RegisterFile("proto3.proto", fileDescriptorProto3) }
+
+var fileDescriptorProto3 = []byte{
+	// 116 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xe2, 0xe2, 0x29, 0x28, 0xca, 0x2f,
+	0xc9, 0x37, 0xd6, 0x03, 0x53, 0x42, 0x6c, 0x65, 0x89, 0x79, 0x99, 0x25, 0x95, 0x4a, 0xe2, 0x5c,
+	0xec, 0x8e, 0x10, 0x09, 0x21, 0x1e, 0x2e, 0x46, 0x27, 0x09, 0x46, 0x05, 0x46, 0x0d, 0xce, 0x20,
+	0xc6, 0x24, 0x27, 0x9d, 0x0b, 0x0f, 0xe5, 0x18, 0x6e, 0x3c, 0x94, 0x63, 0xf8, 0xf0, 0x50, 0x8e,
+	0xb1, 0xe1, 0x91, 0x1c, 0xe3, 0x8a, 0x47, 0x72, 0x8c, 0x27, 0x1e, 0xc9, 0x31, 0x5e, 0x78, 0x24,
+	0xc7, 0xf8, 0xe0, 0x91, 0x1c, 0xe3, 0x8b, 0x47, 0x72, 0x0c, 0x1f, 0x1e, 0xc9, 0x31, 0x4e, 0x78,
+	0x2c, 0xc7, 0x90, 0xc4, 0x06, 0x31, 0x03, 0x10, 0x00, 0x00, 0xff, 0xff, 0x37, 0xd7, 0x45, 0xf0,
+	0x65, 0x00, 0x00, 0x00,
+}
