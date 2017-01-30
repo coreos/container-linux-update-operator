@@ -2,9 +2,9 @@ package operator
 
 import (
 	"fmt"
-	"log"
 	"time"
 
+	"github.com/golang/glog"
 	"k8s.io/client-go/1.5/kubernetes"
 	v1core "k8s.io/client-go/1.5/kubernetes/typed/core/v1"
 	"k8s.io/client-go/1.5/pkg/api"
@@ -77,27 +77,27 @@ func (k *Kontroller) Run() error {
 
 		nodelist, err := k.nc.List(api.ListOptions{})
 		if err != nil {
-			log.Printf("Failed listing nodes %v", err)
+			glog.Infof("Failed listing nodes %v", err)
 			continue
 		}
 
 		nodes := k8sutil.FilterNodesByAnnotation(nodelist.Items, justRebootedSelector)
 
 		if len(nodes) > 0 {
-			log.Printf("Found %d rebooted nodes, setting annotation %q to false", len(nodes), constants.AnnotationOkToReboot)
+			glog.Infof("Found %d rebooted nodes, setting annotation %q to false", len(nodes), constants.AnnotationOkToReboot)
 		}
 
 		for _, n := range nodes {
 			if err := k8sutil.SetNodeAnnotations(k.nc, n.Name, map[string]string{
 				constants.AnnotationOkToReboot: constants.False,
 			}); err != nil {
-				log.Printf("Failed setting annotation %q on node %q to false: %v", constants.AnnotationOkToReboot, n.Name, err)
+				glog.Infof("Failed setting annotation %q on node %q to false: %v", constants.AnnotationOkToReboot, n.Name, err)
 			}
 		}
 
 		nodelist, err = k.nc.List(api.ListOptions{})
 		if err != nil {
-			log.Printf("Failed listing nodes: %v", err)
+			glog.Infof("Failed listing nodes: %v", err)
 			continue
 		}
 
@@ -111,7 +111,7 @@ func (k *Kontroller) Run() error {
 
 		n := nodes[0]
 
-		log.Printf("Found %d nodes that need a reboot, rebooting %q", len(nodes), n.Name)
+		glog.Infof("Found %d nodes that need a reboot, rebooting %q", len(nodes), n.Name)
 
 		k.handleReboot(&n)
 	}
@@ -122,7 +122,7 @@ func (k *Kontroller) handleReboot(n *v1api.Node) {
 	if err := k8sutil.SetNodeAnnotations(k.nc, n.Name, map[string]string{
 		constants.AnnotationOkToReboot: constants.True,
 	}); err != nil {
-		log.Printf("Failed to set annotation %q on node %q: %v", constants.AnnotationOkToReboot, n.Name, err)
+		glog.Infof("Failed to set annotation %q on node %q: %v", constants.AnnotationOkToReboot, n.Name, err)
 		return
 	}
 
@@ -139,8 +139,8 @@ func (k *Kontroller) handleReboot(n *v1api.Node) {
 	}
 	_, err = watch.Until(time.Hour*1, watcher, conds...)
 	if err != nil {
-		log.Printf("Waiting for label %q on node %q failed: %v", constants.AnnotationOkToReboot, n.Name, err)
-		log.Printf("Failed to wait for successful reboot of node %q", n.Name)
+		glog.Infof("Waiting for label %q on node %q failed: %v", constants.AnnotationOkToReboot, n.Name, err)
+		glog.Infof("Failed to wait for successful reboot of node %q", n.Name)
 
 		k.er.Eventf(n, api.EventTypeWarning, eventReasonRebootFailed, "Timed out waiting for node to return after a reboot")
 	}
