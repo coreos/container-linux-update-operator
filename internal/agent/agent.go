@@ -3,10 +3,10 @@ package agent
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/coreos/go-systemd/login1"
+	"github.com/golang/glog"
 	"k8s.io/client-go/1.5/kubernetes"
 	v1core "k8s.io/client-go/1.5/kubernetes/typed/core/v1"
 	"k8s.io/client-go/1.5/pkg/api"
@@ -70,7 +70,7 @@ func (k *Klocksmith) Run() error {
 		constants.LabelVersion: vi.Version,
 	}
 
-	log.Printf("Setting labels: %#v", labels)
+	glog.Infof("Setting labels: %#v", labels)
 	if err := k8sutil.SetNodeLabels(k.nc, k.node, labels); err != nil {
 		return err
 	}
@@ -81,19 +81,19 @@ func (k *Klocksmith) Run() error {
 		constants.AnnotationRebootInProgress: constants.False,
 		constants.AnnotationRebootNeeded:     constants.False,
 	}
-	log.Printf("Setting annotations %#v", anno)
+	glog.Infof("Setting annotations %#v", anno)
 	if err := k8sutil.SetNodeAnnotations(k.nc, k.node, anno); err != nil {
 		return err
 	}
 
 	// we are schedulable now.
-	log.Print("Marking node as schedulable")
+	glog.Info("Marking node as schedulable")
 	if err := k8sutil.Unschedulable(k.nc, k.node, false); err != nil {
 		return err
 	}
 
 	// block until update_engine says to reboot, and set label.
-	log.Printf("Waiting for reboot signal...")
+	glog.Infof("Waiting for reboot signal...")
 	if err := k.waitForRebootSignal(); err != nil {
 		return err
 	}
@@ -102,13 +102,13 @@ func (k *Klocksmith) Run() error {
 	anno = map[string]string{
 		constants.AnnotationRebootNeeded: constants.True,
 	}
-	log.Printf("Setting annotations %#v", anno)
+	glog.Infof("Setting annotations %#v", anno)
 	if err := k8sutil.SetNodeAnnotations(k.nc, k.node, anno); err != nil {
 		return err
 	}
 
 	// block until constants.AnnotationOkToReboot is set
-	log.Printf("Waiting for ok-to-reboot from controller...")
+	glog.Infof("Waiting for ok-to-reboot from controller...")
 	if err := k.waitForOkToReboot(); err != nil {
 		return err
 	}
@@ -117,7 +117,7 @@ func (k *Klocksmith) Run() error {
 	anno = map[string]string{
 		constants.AnnotationRebootInProgress: constants.True,
 	}
-	log.Printf("Setting annotations %#v", anno)
+	glog.Infof("Setting annotations %#v", anno)
 	if err := k8sutil.SetNodeAnnotations(k.nc, k.node, anno); err != nil {
 		return err
 	}
@@ -129,12 +129,12 @@ func (k *Klocksmith) Run() error {
 	// ('any pods that are neither mirror pods nor managed by
 	// ReplicationController, ReplicaSet, DaemonSet or Job')
 
-	log.Print("Marking node as unschedulable")
+	glog.Info("Marking node as unschedulable")
 	if err := k8sutil.Unschedulable(k.nc, k.node, true); err != nil {
 		return err
 	}
 
-	log.Print("Getting pod list for deletion")
+	glog.Info("Getting pod list for deletion")
 	pods, err := k.getPodsForDeletion()
 	if err != nil {
 		return err
@@ -143,16 +143,16 @@ func (k *Klocksmith) Run() error {
 	// delete the pods.
 	// TODO: explicitly don't terminate self? we'll probably just be a
 	// mirror pod or daemonset anyway..
-	log.Printf("Deleting %d pods", len(pods))
+	glog.Infof("Deleting %d pods", len(pods))
 	deleteOptions := api.NewDeleteOptions(30)
 	for _, pod := range pods {
-		log.Printf("Terminating pod %q...", pod.Name)
+		glog.Infof("Terminating pod %q...", pod.Name)
 		if err := k.kc.Pods(pod.Namespace).Delete(pod.Name, deleteOptions); err != nil {
 			return fmt.Errorf("failed terminating pod %q: %v", pod.Name, err)
 		}
 	}
 
-	log.Print("Node drained, rebooting")
+	glog.Info("Node drained, rebooting")
 
 	// reboot
 	k.lc.Reboot(false)
