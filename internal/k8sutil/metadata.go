@@ -4,10 +4,10 @@ import (
 	"bufio"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"strings"
 
+	"github.com/golang/glog"
 	v1core "k8s.io/client-go/1.5/kubernetes/typed/core/v1"
 	v1api "k8s.io/client-go/1.5/pkg/api/v1"
 	"k8s.io/client-go/1.5/pkg/watch"
@@ -143,7 +143,7 @@ func getUpdateMap() (map[string]string, error) {
 	// if present and readable, this file has overrides
 	econf, err := os.Open(updateConfOverridePath)
 	if err != nil {
-		log.Printf("Skipping missing update.conf: %v", err)
+		glog.Infof("Skipping missing update.conf: %v", err)
 	}
 
 	b, err = ioutil.ReadAll(econf)
