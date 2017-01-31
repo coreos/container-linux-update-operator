@@ -1,4 +1,6 @@
-// Copyright (c) 2013, Vastech SA (PTY) LTD. All rights reserved.
+// Protocol Buffers for Go with Gadgets
+//
+// Copyright (c) 2013, The GoGo Authors. All rights reserved.
 // http://github.com/gogo/protobuf
 //
 // Redistribution and use in source and binary forms, with or without
@@ -676,7 +678,7 @@ func (p *unmarshal) field(file *generator.FileDescriptor, msg *generator.Descrip
 			p.Out()
 			p.P(`}`)
 			p.P(`m.`, fieldname, ` = &`, p.OneOfTypeName(msg, field), `{v}`)
-		} else if generator.IsMap(file.FileDescriptorProto, field) {
+		} else if p.IsMap(field) {
 			m := p.GoMapType(nil, field)
 
 			keygoTyp, _ := p.GoType(nil, m.KeyField)
@@ -698,9 +700,6 @@ func (p *unmarshal) field(file *generator.FileDescriptor, msg *generator.Descrip
 			p.P(`var keykey uint64`)
 			p.decodeVarint("keykey", "uint64")
 			p.mapField("mapkey", m.KeyAliasField)
-			p.P(`var valuekey uint64`)
-			p.decodeVarint("valuekey", "uint64")
-			p.mapField("mapvalue", m.ValueAliasField)
 			p.P(`if m.`, fieldname, ` == nil {`)
 			p.In()
 			p.P(`m.`, fieldname, ` = make(`, m.GoType, `)`)
@@ -719,7 +718,19 @@ func (p *unmarshal) field(file *generator.FileDescriptor, msg *generator.Descrip
 			if valuegoTyp != valuegoAliasTyp {
 				v = `((` + valuegoAliasTyp + `)(` + v + `))`
 			}
+			p.P(`if iNdEx < postIndex {`)
+			p.In()
+			p.P(`var valuekey uint64`)
+			p.decodeVarint("valuekey", "uint64")
+			p.mapField("mapvalue", m.ValueAliasField)
 			p.P(s, ` = `, v)
+			p.Out()
+			p.P(`} else {`)
+			p.In()
+			p.P(`var mapvalue `, valuegoAliasTyp)
+			p.P(s, ` = mapvalue`)
+			p.Out()
+			p.P(`}`)
 		} else if repeated {
 			if nullable {
 				p.P(`m.`, fieldname, ` = append(m.`, fieldname, `, &`, msgname, `{})`)
@@ -1135,16 +1146,7 @@ func (p *unmarshal) Generate(file *generator.FileDescriptor) {
 			p.P(`return `, p.ioPkg.Use(), `.ErrUnexpectedEOF`)
 			p.Out()
 			p.P(`}`)
-			if gogoproto.HasExtensionsMap(file.FileDescriptorProto, message.DescriptorProto) {
-				p.P(`if m.XXX_extensions == nil {`)
-				p.In()
-				p.P(`m.XXX_extensions = make(map[int32]`, protoPkg.Use(), `.Extension)`)
-				p.Out()
-				p.P(`}`)
-				p.P(`m.XXX_extensions[int32(fieldNum)] = `, protoPkg.Use(), `.NewExtension(data[iNdEx:iNdEx+skippy])`)
-			} else {
-				p.P(`m.XXX_extensions = append(m.XXX_extensions, data[iNdEx:iNdEx+skippy]...)`)
-			}
+			p.P(protoPkg.Use(), `.AppendExtension(m, int32(fieldNum), data[iNdEx:iNdEx+skippy])`)
 			p.P(`iNdEx += skippy`)
 			p.Out()
 			p.P(`} else {`)

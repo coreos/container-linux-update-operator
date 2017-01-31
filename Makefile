@@ -20,6 +20,9 @@ clean:
 test:
 	CGO_ENABLED=0 go test -tags netgo -v ./internal/...
 
+vendor:
+	glide install --strip-vendor
+
 integration-test:
 
 .PHONY:	all bin precompile image clean

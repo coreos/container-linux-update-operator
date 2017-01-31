@@ -1,4 +1,6 @@
-// Copyright (c) 2013, Vastech SA (PTY) LTD. All rights reserved.
+// Protocol Buffers for Go with Gadgets
+//
+// Copyright (c) 2013, The GoGo Authors. All rights reserved.
 // http://github.com/gogo/protobuf
 //
 // Redistribution and use in source and binary forms, with or without
@@ -119,13 +121,14 @@ package size
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/gogo/protobuf/gogoproto"
 	"github.com/gogo/protobuf/proto"
 	descriptor "github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
 	"github.com/gogo/protobuf/vanity"
-	"strconv"
-	"strings"
 )
 
 type size struct {
@@ -201,10 +204,11 @@ func (p *size) generateField(proto3 bool, file *generator.FileDescriptor, messag
 	fieldname := p.GetOneOfFieldName(message, field)
 	nullable := gogoproto.IsNullable(field)
 	repeated := field.IsRepeated()
+	doNilCheck := gogoproto.NeedsNilCheck(proto3, field)
 	if repeated {
 		p.P(`if len(m.`, fieldname, `) > 0 {`)
 		p.In()
-	} else if ((!proto3 || field.IsMessage()) && nullable) || (!gogoproto.IsCustomType(field) && *field.Type == descriptor.FieldDescriptorProto_TYPE_BYTES) {
+	} else if doNilCheck {
 		p.P(`if m.`, fieldname, ` != nil {`)
 		p.In()
 	}
@@ -324,7 +328,7 @@ func (p *size) generateField(proto3 bool, file *generator.FileDescriptor, messag
 	case descriptor.FieldDescriptorProto_TYPE_GROUP:
 		panic(fmt.Errorf("size does not support group %v", fieldname))
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
-		if generator.IsMap(file.FileDescriptorProto, field) {
+		if p.IsMap(field) {
 			m := p.GoMapType(nil, field)
 			_, keywire := p.GoType(nil, m.KeyAliasField)
 			valuegoTyp, _ := p.GoType(nil, m.ValueField)
@@ -365,29 +369,45 @@ func (p *size) generateField(proto3 bool, file *generator.FileDescriptor, messag
 				descriptor.FieldDescriptorProto_TYPE_SINT64:
 				sum = append(sum, `soz`+p.localName+`(uint64(k))`)
 			}
-			sum = append(sum, strconv.Itoa(valueKeySize))
 			switch m.ValueField.GetType() {
 			case descriptor.FieldDescriptorProto_TYPE_DOUBLE,
 				descriptor.FieldDescriptorProto_TYPE_FIXED64,
 				descriptor.FieldDescriptorProto_TYPE_SFIXED64:
+				sum = append(sum, strconv.Itoa(valueKeySize))
 				sum = append(sum, strconv.Itoa(8))
 			case descriptor.FieldDescriptorProto_TYPE_FLOAT,
 				descriptor.FieldDescriptorProto_TYPE_FIXED32,
 				descriptor.FieldDescriptorProto_TYPE_SFIXED32:
+				sum = append(sum, strconv.Itoa(valueKeySize))
 				sum = append(sum, strconv.Itoa(4))
 			case descriptor.FieldDescriptorProto_TYPE_INT64,
 				descriptor.FieldDescriptorProto_TYPE_UINT64,
 				descriptor.FieldDescriptorProto_TYPE_UINT32,
 				descriptor.FieldDescriptorProto_TYPE_ENUM,
 				descriptor.FieldDescriptorProto_TYPE_INT32:
+				sum = append(sum, strconv.Itoa(valueKeySize))
 				sum = append(sum, `sov`+p.localName+`(uint64(v))`)
 			case descriptor.FieldDescriptorProto_TYPE_BOOL:
+				sum = append(sum, strconv.Itoa(valueKeySize))
 				sum = append(sum, `1`)
-			case descriptor.FieldDescriptorProto_TYPE_STRING,
-				descriptor.FieldDescriptorProto_TYPE_BYTES:
+			case descriptor.FieldDescriptorProto_TYPE_STRING:
+				sum = append(sum, strconv.Itoa(valueKeySize))
 				sum = append(sum, `len(v)+sov`+p.localName+`(uint64(len(v)))`)
+			case descriptor.FieldDescriptorProto_TYPE_BYTES:
+				p.P(`l = 0`)
+				if proto3 {
+					p.P(`if len(v) > 0 {`)
+				} else {
+					p.P(`if v != nil {`)
+				}
+				p.In()
+				p.P(`l = `, strconv.Itoa(valueKeySize), ` + len(v)+sov`+p.localName+`(uint64(len(v)))`)
+				p.Out()
+				p.P(`}`)
+				sum = append(sum, `l`)
 			case descriptor.FieldDescriptorProto_TYPE_SINT32,
 				descriptor.FieldDescriptorProto_TYPE_SINT64:
+				sum = append(sum, strconv.Itoa(valueKeySize))
 				sum = append(sum, `soz`+p.localName+`(uint64(v))`)
 			case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
 				if nullable {
@@ -399,16 +419,19 @@ func (p *size) generateField(proto3 bool, file *generator.FileDescriptor, messag
 					} else {
 						p.P(`l = v.`, sizeName, `()`)
 					}
+					p.P(`l += `, strconv.Itoa(valueKeySize), ` + sov`+p.localName+`(uint64(l))`)
 					p.Out()
 					p.P(`}`)
+					sum = append(sum, `l`)
 				} else {
 					if valuegoTyp != valuegoAliasTyp {
 						p.P(`l = ((*`, valuegoTyp, `)(&v)).`, sizeName, `()`)
 					} else {
 						p.P(`l = v.`, sizeName, `()`)
 					}
+					sum = append(sum, strconv.Itoa(valueKeySize))
+					sum = append(sum, `l+sov`+p.localName+`(uint64(l))`)
 				}
-				sum = append(sum, `l+sov`+p.localName+`(uint64(l))`)
 			}
 			p.P(`mapEntrySize := `, strings.Join(sum, "+"))
 			p.P(`n+=mapEntrySize+`, fieldKeySize, `+sov`, p.localName, `(uint64(mapEntrySize))`)
@@ -488,7 +511,7 @@ func (p *size) generateField(proto3 bool, file *generator.FileDescriptor, messag
 	default:
 		panic("not implemented")
 	}
-	if ((!proto3 || field.IsMessage()) && nullable) || repeated || (!gogoproto.IsCustomType(field) && *field.Type == descriptor.FieldDescriptorProto_TYPE_BYTES) {
+	if repeated || doNilCheck {
 		p.Out()
 		p.P(`}`)
 	}
@@ -541,15 +564,15 @@ func (p *size) Generate(file *generator.FileDescriptor) {
 			}
 		}
 		if message.DescriptorProto.HasExtension() {
-			p.P(`if m.XXX_extensions != nil {`)
-			p.In()
 			if gogoproto.HasExtensionsMap(file.FileDescriptorProto, message.DescriptorProto) {
-				p.P(`n += `, protoPkg.Use(), `.SizeOfExtensionMap(m.XXX_extensions)`)
+				p.P(`n += `, protoPkg.Use(), `.SizeOfInternalExtension(m)`)
 			} else {
+				p.P(`if m.XXX_extensions != nil {`)
+				p.In()
 				p.P(`n+=len(m.XXX_extensions)`)
+				p.Out()
+				p.P(`}`)
 			}
-			p.Out()
-			p.P(`}`)
 		}
 		if gogoproto.HasUnrecognized(file.FileDescriptorProto, message.DescriptorProto) {
 			p.P(`if m.XXX_unrecognized != nil {`)

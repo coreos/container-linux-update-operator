@@ -1,5 +1,5 @@
-hash: 347a969debb442e0bac00e8754f73a67e31063d231514116c116bf3fa03f0fa0
-updated: 2016-12-12T17:21:19.728178701-08:00
+hash: b37e5f306721a4be3cbbf20679e2f30eb29f001e4575a151b282bfed29f9ad46
+updated: 2017-01-30T15:40:49.35080403-08:00
 imports:
 - name: github.com/blang/semver
   version: 31b736133b98f26d5e078ec9eb591666edfd091f
@@ -51,7 +51,7 @@ imports:
 - name: github.com/godbus/dbus
   version: 5f6efc7ef2759c81b7ba876593971bfce311eab3
 - name: github.com/gogo/protobuf
-  version: 82d16f734d6d871204a3feb1a73cb220cc92574c
+  version: 909568be09de550ed094403c2bf8a261b5bb730a
   subpackages:
   - proto
   - sortkeys

@@ -1,7 +1,7 @@
-// Extensions for Protocol Buffers to create more go like structures.
+// Protocol Buffers for Go with Gadgets
 //
-// Copyright (c) 2015, Vastech SA (PTY) LTD. All rights reserved.
-// http://github.com/gogo/protobuf/gogoproto
+// Copyright (c) 2015, The GoGo Authors. All rights reserved.
+// http://github.com/gogo/protobuf
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
@@ -29,10 +29,11 @@
 package vanity
 
 import (
+	"strings"
+
 	"github.com/gogo/protobuf/gogoproto"
 	"github.com/gogo/protobuf/proto"
 	descriptor "github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
-	"strings"
 )
 
 func NotInPackageGoogleProtobuf(file *descriptor.FileDescriptorProto) bool {
@@ -135,6 +136,10 @@ func TurnOnMarshalerAll(file *descriptor.FileDescriptorProto) {
 
 func TurnOnUnmarshalerAll(file *descriptor.FileDescriptorProto) {
 	SetBoolFileOption(gogoproto.E_UnmarshalerAll, true)(file)
+}
+
+func TurnOnStable_MarshalerAll(file *descriptor.FileDescriptorProto) {
+	SetBoolFileOption(gogoproto.E_StableMarshalerAll, true)(file)
 }
 
 func TurnOnSizerAll(file *descriptor.FileDescriptorProto) {

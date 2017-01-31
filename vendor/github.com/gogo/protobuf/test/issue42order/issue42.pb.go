@@ -26,15 +26,22 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+
 type UnorderedFields struct {
-	A                *int64  `protobuf:"varint,10,opt,name=A" json:"A,omitempty"`
-	B                *uint64 `protobuf:"fixed64,1,opt,name=B" json:"B,omitempty"`
+	A                *int64  `protobuf:"varint,10,opt,name=A,json=a" json:"A,omitempty"`
+	B                *uint64 `protobuf:"fixed64,1,opt,name=B,json=b" json:"B,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *UnorderedFields) Reset()         { *m = UnorderedFields{} }
-func (m *UnorderedFields) String() string { return proto.CompactTextString(m) }
-func (*UnorderedFields) ProtoMessage()    {}
+func (m *UnorderedFields) Reset()                    { *m = UnorderedFields{} }
+func (m *UnorderedFields) String() string            { return proto.CompactTextString(m) }
+func (*UnorderedFields) ProtoMessage()               {}
+func (*UnorderedFields) Descriptor() ([]byte, []int) { return fileDescriptorIssue42, []int{0} }
 
 func (m *UnorderedFields) GetA() int64 {
 	if m != nil && m.A != nil {
@@ -51,14 +58,15 @@ func (m *UnorderedFields) GetB() uint64 {
 }
 
 type OrderedFields struct {
-	B                *uint64 `protobuf:"fixed64,1,opt,name=B" json:"B,omitempty"`
-	A                *int64  `protobuf:"varint,10,opt,name=A" json:"A,omitempty"`
+	B                *uint64 `protobuf:"fixed64,1,opt,name=B,json=b" json:"B,omitempty"`
+	A                *int64  `protobuf:"varint,10,opt,name=A,json=a" json:"A,omitempty"`
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *OrderedFields) Reset()         { *m = OrderedFields{} }
-func (m *OrderedFields) String() string { return proto.CompactTextString(m) }
-func (*OrderedFields) ProtoMessage()    {}
+func (m *OrderedFields) Reset()                    { *m = OrderedFields{} }
+func (m *OrderedFields) String() string            { return proto.CompactTextString(m) }
+func (*OrderedFields) ProtoMessage()               {}
+func (*OrderedFields) Descriptor() ([]byte, []int) { return fileDescriptorIssue42, []int{1} }
 
 func (m *OrderedFields) GetB() uint64 {
 	if m != nil && m.B != nil {
@@ -602,3 +610,18 @@ var (
 	ErrInvalidLengthIssue42 = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowIssue42   = fmt.Errorf("proto: integer overflow")
 )
+
+func init() { proto.RegisterFile("issue42.proto", fileDescriptorIssue42) }
+
+var fileDescriptorIssue42 = []byte{
+	// 144 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xe2, 0xe2, 0xcd, 0x2c, 0x2e, 0x2e,
+	0x4d, 0x35, 0x31, 0xd2, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x87, 0x72, 0xa5, 0x74, 0xd3,
+	0x33, 0x4b, 0x32, 0x4a, 0x93, 0xf4, 0x92, 0xf3, 0x73, 0xf5, 0xd3, 0xf3, 0xd3, 0xf3, 0xf5, 0xc1,
+	0xf2, 0x49, 0xa5, 0x69, 0x60, 0x1e, 0x98, 0x03, 0x66, 0x41, 0xf4, 0x29, 0xe9, 0x72, 0xf1, 0x87,
+	0xe6, 0xe5, 0x17, 0xa5, 0xa4, 0x16, 0xa5, 0xa6, 0xb8, 0x65, 0xa6, 0xe6, 0xa4, 0x14, 0x0b, 0xf1,
+	0x70, 0x31, 0x3a, 0x49, 0x30, 0x2a, 0x30, 0x6a, 0xb0, 0x05, 0x31, 0x26, 0x81, 0x78, 0x8e, 0x12,
+	0x5c, 0x0a, 0x8c, 0x1a, 0xcc, 0x41, 0x8c, 0x89, 0x4a, 0xda, 0x5c, 0xbc, 0xfe, 0xc4, 0x2a, 0x76,
+	0x12, 0xf8, 0xf1, 0x50, 0x8e, 0xf1, 0xc4, 0x23, 0x39, 0xc6, 0x0b, 0x8f, 0xe4, 0x18, 0x1f, 0x3c,
+	0x92, 0x63, 0x04, 0x04, 0x00, 0x00, 0xff, 0xff, 0xad, 0x9a, 0xd1, 0x5b, 0xb5, 0x00, 0x00, 0x00,
+}
