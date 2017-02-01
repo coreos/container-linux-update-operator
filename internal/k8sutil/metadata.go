@@ -50,7 +50,7 @@ func updateNodeRetry(nc v1core.NodeInterface, node string, f func(*v1api.Node)) 
 	f(n)
 
 	err = RetryOnConflict(DefaultBackoff, func() (err error) {
-		n, err = nc.Update(n)
+		_, err = nc.Update(n)
 		return
 	})
 	if err != nil {
