@@ -61,7 +61,9 @@ func (k *Klocksmith) updateStatusCallback(s updateengine.Status) {
 	glog.Info("Updating status")
 	// update our status
 	anno := map[string]string{
-		constants.AnnotationStatus: s.CurrentOperation,
+		constants.AnnotationStatus:          s.CurrentOperation,
+		constants.AnnotationLastCheckedTime: fmt.Sprintf("%d", s.LastCheckedTime),
+		constants.AnnotationNewVersion:      s.NewVersion,
 	}
 
 	// indicate we need a reboot
