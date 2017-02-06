@@ -105,9 +105,9 @@ func (k *Klocksmith) setInfoLabels() error {
 // Run runs klocksmithd, reacting to the update_engine reboot signal by
 // draining pods on this kubernetes node and rebooting.
 //
-// TODO: try to be more resilient against transient failures
+// TODO(mischief): try to be more resilient against transient failures
 func (k *Klocksmith) Run() error {
-	log.Print("Setting info labels")
+	glog.Info("Setting info labels")
 	if err := k.setInfoLabels(); err != nil {
 		return fmt.Errorf("failed to set node info: %v", err)
 	}
@@ -167,7 +167,7 @@ func (k *Klocksmith) Run() error {
 	}
 
 	// delete the pods.
-	// TODO: explicitly don't terminate self? we'll probably just be a
+	// TODO(mischief): explicitly don't terminate self? we'll probably just be a
 	// mirror pod or daemonset anyway..
 	glog.Infof("Deleting %d pods", len(pods))
 	deleteOptions := api.NewDeleteOptions(30)
