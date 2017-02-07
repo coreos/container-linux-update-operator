@@ -12,6 +12,7 @@ import (
 	"k8s.io/client-go/1.5/pkg/api"
 	v1api "k8s.io/client-go/1.5/pkg/api/v1"
 	"k8s.io/client-go/1.5/pkg/fields"
+	"k8s.io/client-go/1.5/pkg/util/wait"
 	"k8s.io/client-go/1.5/pkg/watch"
 
 	"github.com/coreos-inc/container-linux-update-operator/internal/constants"
@@ -53,12 +54,36 @@ func New(node string) (*Klocksmith, error) {
 	return &Klocksmith{node, kc, nc, ue, lc}, nil
 }
 
-// Run runs klocksmithd, reacting to the update_engine reboot signal by
-// draining pods on this kubernetes node and rebooting.
-//
-// TODO: try to be more resilient against transient failures
-func (k *Klocksmith) Run() error {
-	// set annotations with helpful info about the coreos node
+// updateStatusCallback receives Status messages from update engine. If the
+// status is UpdateStatusUpdatedNeedReboot, indicate that with a label on our
+// node.
+func (k *Klocksmith) updateStatusCallback(s updateengine.Status) {
+	glog.Info("Updating status")
+	// update our status
+	anno := map[string]string{
+		constants.AnnotationStatus:          s.CurrentOperation,
+		constants.AnnotationLastCheckedTime: fmt.Sprintf("%d", s.LastCheckedTime),
+		constants.AnnotationNewVersion:      s.NewVersion,
+	}
+
+	// indicate we need a reboot
+	if s.CurrentOperation == updateengine.UpdateStatusUpdatedNeedReboot {
+		glog.Info("Indicating a reboot is needed")
+		anno[constants.AnnotationRebootNeeded] = constants.True
+	}
+
+	wait.PollUntil(10*time.Second, func() (bool, error) {
+		if err := k8sutil.SetNodeAnnotations(k.nc, k.node, anno); err != nil {
+			glog.Errorf("Failed to set annotation %q: %v", constants.AnnotationStatus, err)
+			return false, nil
+		}
+
+		return true, nil
+	}, wait.NeverStop)
+}
+
+// setInfoLabels labels our node with helpful info about Container Linux.
+func (k *Klocksmith) setInfoLabels() error {
 	vi, err := k8sutil.GetVersionInfo()
 	if err != nil {
 		return fmt.Errorf("failed to get version info: %v", err)
@@ -70,9 +95,21 @@ func (k *Klocksmith) Run() error {
 		constants.LabelVersion: vi.Version,
 	}
 
-	glog.Infof("Setting labels: %#v", labels)
 	if err := k8sutil.SetNodeLabels(k.nc, k.node, labels); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+// Run runs klocksmithd, reacting to the update_engine reboot signal by
+// draining pods on this kubernetes node and rebooting.
+//
+// TODO(mischief): try to be more resilient against transient failures
+func (k *Klocksmith) Run() error {
+	glog.Info("Setting info labels")
+	if err := k.setInfoLabels(); err != nil {
+		return fmt.Errorf("failed to set node info: %v", err)
 	}
 
 	// set coreos.com/update1/reboot-in-progress=false and
@@ -92,20 +129,8 @@ func (k *Klocksmith) Run() error {
 		return err
 	}
 
-	// block until update_engine says to reboot, and set label.
-	glog.Infof("Waiting for reboot signal...")
-	if err := k.waitForRebootSignal(); err != nil {
-		return err
-	}
-
-	// indicate we need a reboot
-	anno = map[string]string{
-		constants.AnnotationRebootNeeded: constants.True,
-	}
-	glog.Infof("Setting annotations %#v", anno)
-	if err := k8sutil.SetNodeAnnotations(k.nc, k.node, anno); err != nil {
-		return err
-	}
+	// watch update engine for status updates
+	go k.watchUpdateStatus(k.updateStatusCallback)
 
 	// block until constants.AnnotationOkToReboot is set
 	glog.Infof("Waiting for ok-to-reboot from controller...")
@@ -117,6 +142,7 @@ func (k *Klocksmith) Run() error {
 	anno = map[string]string{
 		constants.AnnotationRebootInProgress: constants.True,
 	}
+
 	glog.Infof("Setting annotations %#v", anno)
 	if err := k8sutil.SetNodeAnnotations(k.nc, k.node, anno); err != nil {
 		return err
@@ -141,7 +167,7 @@ func (k *Klocksmith) Run() error {
 	}
 
 	// delete the pods.
-	// TODO: explicitly don't terminate self? we'll probably just be a
+	// TODO(mischief): explicitly don't terminate self? we'll probably just be a
 	// mirror pod or daemonset anyway..
 	glog.Infof("Deleting %d pods", len(pods))
 	deleteOptions := api.NewDeleteOptions(30)
@@ -161,6 +187,31 @@ func (k *Klocksmith) Run() error {
 	time.Sleep(24 * 7 * time.Hour)
 
 	return nil
+}
+
+func (k *Klocksmith) watchUpdateStatus(update func(s updateengine.Status)) {
+	glog.Info("Beginning to watch update_engine status")
+
+	oldOperation := ""
+	ch := make(chan updateengine.Status, 1)
+	stop := make(chan struct{})
+
+	go k.ue.ReceiveStatuses(ch, stop)
+
+	// synthesize first message
+	st, err := k.ue.GetStatus()
+	if err != nil {
+		glog.Fatalf("Failed to get update_engine status: %v", err)
+	}
+
+	ch <- st
+
+	for status := range ch {
+		if status.CurrentOperation != oldOperation && update != nil {
+			update(status)
+			oldOperation = status.CurrentOperation
+		}
+	}
 }
 
 // waitForRebootSignal watches update_engine and waits for

@@ -74,6 +74,17 @@ func New() (c *Client, err error) {
 	return c, nil
 }
 
+func (c *Client) ReceiveStatuses(rcvr chan Status, stop <-chan struct{}) {
+	for {
+		select {
+		case <-stop:
+			return
+		case signal := <-c.ch:
+			rcvr <- NewStatus(signal.Body)
+		}
+	}
+}
+
 func (c *Client) RebootNeededSignal(rcvr chan Status, stop <-chan struct{}) {
 	for {
 		select {
