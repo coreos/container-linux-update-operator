@@ -1,18 +1,17 @@
-IMAGE	?= quay.io/coreos/container-linux-update-operator
-TAG	?= dev
+.PHONY:	all bin precompile image clean
 
-all:	bin image
+all:	bin
 
 bin:	bin/update-agent bin/update-operator
 
 bin/%:
-	CGO_ENABLED=0 go build -ldflags '-s -w' -tags netgo -v -o $@ ./cmd/$*
+	CGO_ENABLED=0 go build -ldflags '-s -w' -tags netgo -o $@ ./cmd/$*
 
 precompile:
-	CGO_ENABLED=0 go test -i -tags netgo -v ./cmd/...
+	CGO_ENABLED=0 go test -i -tags netgo ./cmd/...
 
 image:
-	docker build -t $(IMAGE):$(TAG) -f Dockerfile .
+	./build/build-image.sh
 
 clean:
 	rm -rf bin
@@ -24,6 +23,3 @@ vendor:
 	glide install --strip-vendor
 
 integration-test:
-
-.PHONY:	all bin precompile image clean
-
