@@ -9,7 +9,7 @@ readonly VERSION=${VERSION:-$(${REPO_ROOT}/build/git-version.sh)}
 sudo rkt run --uuid-file-save=rkt.uuid \
     --volume repo-root,kind=host,source=${REPO_ROOT} \
     --mount volume=repo-root,target=/go/src/github.com/coreos-inc/container-linux-update-operator \
-    --insecure-options=image docker://golang:1.7.3 --exec /bin/bash -- -c \
+    --insecure-options=image,ondisk docker://golang:1.7.3 --exec /bin/bash -- -c \
     "cd /go/src/github.com/coreos-inc/container-linux-update-operator && make clean test all"
 
 sudo rkt rm --uuid-file=rkt.uuid
