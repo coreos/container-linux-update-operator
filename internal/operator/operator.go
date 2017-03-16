@@ -5,14 +5,14 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"k8s.io/client-go/1.5/kubernetes"
-	v1core "k8s.io/client-go/1.5/kubernetes/typed/core/v1"
-	"k8s.io/client-go/1.5/pkg/api"
-	v1api "k8s.io/client-go/1.5/pkg/api/v1"
-	"k8s.io/client-go/1.5/pkg/fields"
-	"k8s.io/client-go/1.5/pkg/util/flowcontrol"
-	"k8s.io/client-go/1.5/pkg/watch"
-	"k8s.io/client-go/1.5/tools/record"
+	"k8s.io/client-go/kubernetes"
+	v1core "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/pkg/api"
+	v1api "k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/pkg/fields"
+	"k8s.io/client-go/pkg/util/flowcontrol"
+	"k8s.io/client-go/pkg/watch"
+	"k8s.io/client-go/tools/record"
 
 	"github.com/coreos-inc/container-linux-update-operator/internal/constants"
 	"github.com/coreos-inc/container-linux-update-operator/internal/k8sutil"
@@ -75,7 +75,7 @@ func (k *Kontroller) Run() error {
 	for {
 		rl.Accept()
 
-		nodelist, err := k.nc.List(api.ListOptions{})
+		nodelist, err := k.nc.List(v1api.ListOptions{})
 		if err != nil {
 			glog.Infof("Failed listing nodes %v", err)
 			continue
@@ -95,7 +95,7 @@ func (k *Kontroller) Run() error {
 			}
 		}
 
-		nodelist, err = k.nc.List(api.ListOptions{})
+		nodelist, err = k.nc.List(v1api.ListOptions{})
 		if err != nil {
 			glog.Infof("Failed listing nodes: %v", err)
 			continue
@@ -127,8 +127,8 @@ func (k *Kontroller) handleReboot(n *v1api.Node) {
 	}
 
 	// wait for it to come back...
-	watcher, err := k.nc.Watch(api.ListOptions{
-		FieldSelector:   fields.OneTermEqualSelector("metadata.name", n.Name),
+	watcher, err := k.nc.Watch(v1api.ListOptions{
+		FieldSelector:   fields.OneTermEqualSelector("metadata.name", n.Name).String(),
 		ResourceVersion: n.ResourceVersion,
 	})
 

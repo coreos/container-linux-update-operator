@@ -8,14 +8,12 @@ import (
 	"path"
 	"reflect"
 	"sort"
-	"strconv"
 	"strings"
 	"unicode"
 )
 
 const pkgWriter = "github.com/mailru/easyjson/jwriter"
 const pkgLexer = "github.com/mailru/easyjson/jlexer"
-const pkgEasyjson = "github.com/mailru/easyjson"
 
 // FieldNamer defines a policy for generating names for struct fields.
 type FieldNamer interface {
@@ -60,7 +58,6 @@ func NewGenerator(filename string) *Generator {
 		imports: map[string]string{
 			pkgWriter:       "jwriter",
 			pkgLexer:        "jlexer",
-			pkgEasyjson:      "easyjson",
 			"encoding/json": "json",
 		},
 		fieldNamer:    DefaultFieldNamer{},
@@ -161,10 +158,9 @@ func (g *Generator) printHeader() {
 	fmt.Println("")
 	fmt.Println("// suppress unused package warning")
 	fmt.Println("var (")
-	fmt.Println("   _ *json.RawMessage")
-	fmt.Println("   _ *jlexer.Lexer")
-	fmt.Println("   _ *jwriter.Writer")
-	fmt.Println("   _ easyjson.Marshaler")
+	fmt.Println("   _ = json.RawMessage{}")
+	fmt.Println("   _ = jlexer.Lexer{}")
+	fmt.Println("   _ = jwriter.Writer{}")
 	fmt.Println(")")
 
 	fmt.Println()
@@ -202,18 +198,8 @@ func (g *Generator) Run(out io.Writer) error {
 	return err
 }
 
-// fixes vendored paths
-func fixPkgPathVendoring(pkgPath string) string {
-	const vendor = "/vendor/"
-	if i := strings.LastIndex(pkgPath, vendor); i != -1 {
-		return pkgPath[i+len(vendor):]
-	}
-	return pkgPath
-}
-
 // pkgAlias creates and returns and import alias for a given package.
 func (g *Generator) pkgAlias(pkgPath string) string {
-	pkgPath = fixPkgPathVendoring(pkgPath)
 	if alias := g.imports[pkgPath]; alias != "" {
 		return alias
 	}
@@ -247,8 +233,6 @@ func (g *Generator) getType(t reflect.Type) string {
 			return "*" + g.getType(t.Elem())
 		case reflect.Slice:
 			return "[]" + g.getType(t.Elem())
-		case reflect.Array:
-			return "[" + strconv.Itoa(t.Len()) + "]" + g.getType(t.Elem())
 		case reflect.Map:
 			return "map[" + g.getType(t.Key()) + "]" + g.getType(t.Elem())
 		}
