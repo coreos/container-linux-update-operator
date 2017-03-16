@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	v1core "k8s.io/client-go/1.5/kubernetes/typed/core/v1"
-	v1api "k8s.io/client-go/1.5/pkg/api/v1"
-	"k8s.io/client-go/1.5/pkg/watch"
+	v1core "k8s.io/client-go/kubernetes/typed/core/v1"
+	v1api "k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/pkg/watch"
 )
 
 const (

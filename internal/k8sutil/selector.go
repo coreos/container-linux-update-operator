@@ -1,8 +1,8 @@
 package k8sutil
 
 import (
-	v1api "k8s.io/client-go/1.5/pkg/api/v1"
-	"k8s.io/client-go/1.5/pkg/fields"
+	v1api "k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/pkg/fields"
 )
 
 // FilterNodesByAnnotation takes a node list and a field selector, and returns

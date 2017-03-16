@@ -3,13 +3,13 @@ package drain
 import (
 	"fmt"
 
-	"k8s.io/client-go/1.5/kubernetes"
-	"k8s.io/client-go/1.5/pkg/api"
-	"k8s.io/client-go/1.5/pkg/api/errors"
-	v1api "k8s.io/client-go/1.5/pkg/api/v1"
-	"k8s.io/client-go/1.5/pkg/fields"
-	"k8s.io/client-go/1.5/pkg/kubelet/types"
-	"k8s.io/client-go/1.5/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/pkg/api"
+	"k8s.io/client-go/pkg/api/errors"
+	v1api "k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/pkg/fields"
+	"k8s.io/client-go/pkg/kubelet/types"
+	"k8s.io/client-go/pkg/runtime"
 )
 
 // GetPodsForDeletion finds pods on the given node that are candidates for
@@ -18,9 +18,8 @@ import (
 // https://github.com/kubernetes/kubernetes/blob/cbbf22a7d2b06a55066b16885a4baaf4ce92d3a4/pkg/kubectl/cmd/drain.go.
 // See DrainOptions.getPodsForDeletion and callees.
 func GetPodsForDeletion(kc *kubernetes.Clientset, node string) (pods []v1api.Pod, err error) {
-	pi := kc.Pods(api.NamespaceAll)
-	podList, err := pi.List(api.ListOptions{
-		FieldSelector: fields.SelectorFromSet(fields.Set{"spec.nodeName": node}),
+	podList, err := kc.Core().Pods(v1api.NamespaceAll).List(v1api.ListOptions{
+		FieldSelector: fields.SelectorFromSet(fields.Set{"spec.nodeName": node}).String(),
 	})
 	if err != nil {
 		return pods, err
@@ -74,7 +73,7 @@ func getController(kc *kubernetes.Clientset, sr *api.SerializedReference) (inter
 	case "DaemonSet":
 		return kc.DaemonSets(sr.Reference.Namespace).Get(sr.Reference.Name)
 	case "Job":
-		return kc.BatchClient.Jobs(sr.Reference.Namespace).Get(sr.Reference.Name)
+		return kc.Batch().Jobs(sr.Reference.Namespace).Get(sr.Reference.Name)
 	case "ReplicaSet":
 		return kc.ReplicaSets(sr.Reference.Namespace).Get(sr.Reference.Name)
 	}

@@ -7,13 +7,12 @@ import (
 
 	"github.com/coreos/go-systemd/login1"
 	"github.com/golang/glog"
-	"k8s.io/client-go/1.5/kubernetes"
-	v1core "k8s.io/client-go/1.5/kubernetes/typed/core/v1"
-	"k8s.io/client-go/1.5/pkg/api"
-	v1api "k8s.io/client-go/1.5/pkg/api/v1"
-	"k8s.io/client-go/1.5/pkg/fields"
-	"k8s.io/client-go/1.5/pkg/util/wait"
-	"k8s.io/client-go/1.5/pkg/watch"
+	"k8s.io/client-go/kubernetes"
+	v1core "k8s.io/client-go/kubernetes/typed/core/v1"
+	v1api "k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/pkg/fields"
+	"k8s.io/client-go/pkg/util/wait"
+	"k8s.io/client-go/pkg/watch"
 
 	"github.com/coreos-inc/container-linux-update-operator/internal/constants"
 	"github.com/coreos-inc/container-linux-update-operator/internal/drain"
@@ -170,7 +169,7 @@ func (k *Klocksmith) Run() error {
 	// TODO(mischief): explicitly don't terminate self? we'll probably just be a
 	// mirror pod or daemonset anyway..
 	glog.Infof("Deleting %d pods", len(pods))
-	deleteOptions := api.NewDeleteOptions(30)
+	deleteOptions := v1api.NewDeleteOptions(30)
 	for _, pod := range pods {
 		glog.Infof("Terminating pod %q...", pod.Name)
 		if err := k.kc.Pods(pod.Namespace).Delete(pod.Name, deleteOptions); err != nil {
@@ -243,8 +242,8 @@ func (k *Klocksmith) waitForOkToReboot() error {
 	}
 
 	// XXX: set timeout > 0?
-	watcher, err := k.nc.Watch(api.ListOptions{
-		FieldSelector:   fields.OneTermEqualSelector("metadata.name", n.Name),
+	watcher, err := k.nc.Watch(v1api.ListOptions{
+		FieldSelector:   fields.OneTermEqualSelector("metadata.name", n.Name).String(),
 		ResourceVersion: n.ResourceVersion,
 	})
 	if err != nil {

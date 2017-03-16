@@ -21,8 +21,8 @@ package k8sutil
 import (
 	"time"
 
-	"k8s.io/client-go/1.5/pkg/api/errors"
-	"k8s.io/client-go/1.5/pkg/util/wait"
+	"k8s.io/client-go/pkg/api/errors"
+	"k8s.io/client-go/pkg/util/wait"
 )
 
 // DefaultRetry is the recommended retry for a conflict where multiple clients
