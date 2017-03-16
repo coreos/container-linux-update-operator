@@ -1,5 +1,5 @@
-hash: 0a7b9c08e5e9cb5262024e1eda783b16c3aeb5e8b6a6b13993e81c07064c1964
-updated: 2017-03-15T15:55:32.939749597-07:00
+hash: 5e7986d487d64b570dbf5b7385447e377a5b7292328f004429f53615da8c65fd
+updated: 2017-03-16T14:53:44.143051685-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -251,4 +251,6 @@ imports:
   - tools/metrics
   - tools/record
   - transport
-testImports: []
+testImports:
+- name: github.com/golang/mock
+  version: bd3c8e81be01eef76d4b503f5e687d2d1354d2d9
