@@ -37,21 +37,22 @@ func NodeAnnotationCondition(key, value string) watch.ConditionFunc {
 	}
 }
 
-// updateNodeRetry calls f to update a node object in Kubernetes. f is called
-// once and expected to change the spec or metadata of the node argument.
-// updateNodeRetry will retry the update if there is a conflict using
-// DefaultBackoff.
-func updateNodeRetry(nc v1core.NodeInterface, node string, f func(*v1api.Node)) error {
-	n, err := nc.Get(node)
-	if err != nil {
-		return fmt.Errorf("failed to get node %q: %v", node, err)
-	}
+// UpdateNodeRetry calls f to update a node object in Kubernetes.
+// It will attempt to update the node by applying f to it up to DefaultBackoff
+// number of times.
+// f will be called each time since the node object will likely have changed if
+// a retry is necessary.
+func UpdateNodeRetry(nc v1core.NodeInterface, node string, f func(*v1api.Node)) error {
+	err := RetryOnConflict(DefaultBackoff, func() error {
+		n, getErr := nc.Get(node)
+		if getErr != nil {
+			return fmt.Errorf("failed to get node %q: %v", node, getErr)
+		}
 
-	f(n)
+		f(n)
 
-	err = RetryOnConflict(DefaultBackoff, func() (err error) {
-		_, err = nc.Update(n)
-		return
+		_, err := nc.Update(n)
+		return err
 	})
 	if err != nil {
 		// may be conflict if max retries were hit
@@ -64,7 +65,7 @@ func updateNodeRetry(nc v1core.NodeInterface, node string, f func(*v1api.Node)) 
 // SetNodeLabels sets all keys in m to their respective values in
 // node's labels.
 func SetNodeLabels(nc v1core.NodeInterface, node string, m map[string]string) error {
-	return updateNodeRetry(nc, node, func(n *v1api.Node) {
+	return UpdateNodeRetry(nc, node, func(n *v1api.Node) {
 		for k, v := range m {
 			n.Labels[k] = v
 		}
@@ -74,7 +75,7 @@ func SetNodeLabels(nc v1core.NodeInterface, node string, m map[string]string) er
 // SetNodeAnnotations sets all keys in m to their respective values in
 // node's annotations.
 func SetNodeAnnotations(nc v1core.NodeInterface, node string, m map[string]string) error {
-	return updateNodeRetry(nc, node, func(n *v1api.Node) {
+	return UpdateNodeRetry(nc, node, func(n *v1api.Node) {
 		for k, v := range m {
 			n.Annotations[k] = v
 		}

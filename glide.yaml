@@ -33,4 +33,5 @@ import:
   subpackages:
   - proto
   - sortkeys
-
+testImport:
+- package: github.com/golang/mock
