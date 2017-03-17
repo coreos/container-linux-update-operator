@@ -15,7 +15,7 @@ import (
 // GetPodsForDeletion finds pods on the given node that are candidates for
 // deletion during a drain before a reboot.
 // This code mimics pod filtering behavior in
-// https://github.com/kubernetes/kubernetes/blob/cbbf22a7d2b06a55066b16885a4baaf4ce92d3a4/pkg/kubectl/cmd/drain.go.
+// https://github.com/kubernetes/kubernetes/blob/v1.5.4/pkg/kubectl/cmd/drain.go#L234-L245
 // See DrainOptions.getPodsForDeletion and callees.
 func GetPodsForDeletion(kc *kubernetes.Clientset, node string) (pods []v1api.Pod, err error) {
 	podList, err := kc.Core().Pods(v1api.NamespaceAll).List(v1api.ListOptions{
@@ -34,7 +34,8 @@ func GetPodsForDeletion(kc *kubernetes.Clientset, node string) (pods []v1api.Pod
 		// unlike kubelet we don't care if you have emptyDir volumes or
 		// are not replicated via some controller. sorry.
 
-		// but we do skip daemonset pods, since ds controller will just restart them
+		// but we do skip daemonset pods, since ds controller will just restart them anyways.
+		// As an exception, we do delete daemonset pods that have been "orphaned" by their controller.
 		if creatorRef, ok := pod.Annotations[api.CreatedByAnnotation]; ok {
 			// decode ref to find kind
 			sr := &api.SerializedReference{}
@@ -44,8 +45,7 @@ func GetPodsForDeletion(kc *kubernetes.Clientset, node string) (pods []v1api.Pod
 			}
 
 			if sr.Reference.Kind == "DaemonSet" {
-				// check if daemonset still exists
-				_, err := getController(kc, sr)
+				_, err := getDaemonsetController(kc, sr)
 				if err == nil {
 					// it exists, skip it
 					continue
@@ -53,8 +53,8 @@ func GetPodsForDeletion(kc *kubernetes.Clientset, node string) (pods []v1api.Pod
 				if !errors.IsNotFound(err) {
 					return nil, fmt.Errorf("failed to get controller of pod %q: %v", pod.Name, err)
 				}
+				// else the controller is gone, fall through to delete this orphan
 			}
-
 		}
 
 		pods = append(pods, pod)
@@ -63,19 +63,13 @@ func GetPodsForDeletion(kc *kubernetes.Clientset, node string) (pods []v1api.Pod
 	return pods, nil
 }
 
-// clone of
+// Pared down version of
 // https://github.com/kubernetes/kubernetes/blob/cbbf22a7d2b06a55066b16885a4baaf4ce92d3a4/pkg/kubectl/cmd/drain.go's
-// getController().
-func getController(kc *kubernetes.Clientset, sr *api.SerializedReference) (interface{}, error) {
+// getDaemonsetController().
+func getDaemonsetController(kc *kubernetes.Clientset, sr *api.SerializedReference) (interface{}, error) {
 	switch sr.Reference.Kind {
-	case "ReplicationController":
-		return kc.ReplicationControllers(sr.Reference.Namespace).Get(sr.Reference.Name)
 	case "DaemonSet":
 		return kc.DaemonSets(sr.Reference.Namespace).Get(sr.Reference.Name)
-	case "Job":
-		return kc.Batch().Jobs(sr.Reference.Namespace).Get(sr.Reference.Name)
-	case "ReplicaSet":
-		return kc.ReplicaSets(sr.Reference.Namespace).Get(sr.Reference.Name)
 	}
 	return nil, fmt.Errorf("unknown controller kind %q", sr.Reference.Kind)
 }
