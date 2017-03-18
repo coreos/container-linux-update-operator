@@ -2,16 +2,13 @@ package operator
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/golang/glog"
 	"k8s.io/client-go/kubernetes"
 	v1core "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/client-go/pkg/api"
 	v1api "k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/pkg/fields"
 	"k8s.io/client-go/pkg/util/flowcontrol"
-	"k8s.io/client-go/pkg/watch"
 	"k8s.io/client-go/tools/record"
 
 	"github.com/coreos-inc/container-linux-update-operator/internal/constants"
@@ -21,6 +18,7 @@ import (
 const (
 	eventReasonRebootFailed = "RebootFailed"
 	eventSourceComponent    = "update-operator"
+	maxRebootingNodes       = 1
 )
 
 var (
@@ -44,6 +42,14 @@ var (
 	//
 	// If constants.AnnotationRebootPaused is set to "true", the update-agent will not consider it for rebooting.
 	wantsRebootSelector = fields.ParseSelectorOrDie(constants.AnnotationRebootNeeded + "==" + constants.True + "," + constants.AnnotationRebootPaused + "!=" + constants.True)
+
+	// stillRebootingSelector is a selector for the annotation set expected to be
+	// on a node when it's in the process of rebooting
+	stillRebootingSelector = fields.Set(map[string]string{
+		constants.AnnotationOkToReboot:       constants.True,
+		constants.AnnotationRebootNeeded:     constants.True,
+		constants.AnnotationRebootInProgress: constants.True,
+	}).AsSelector()
 )
 
 type Kontroller struct {
@@ -81,13 +87,13 @@ func (k *Kontroller) Run() error {
 			continue
 		}
 
-		nodes := k8sutil.FilterNodesByAnnotation(nodelist.Items, justRebootedSelector)
+		justRebootedNodes := k8sutil.FilterNodesByAnnotation(nodelist.Items, justRebootedSelector)
 
-		if len(nodes) > 0 {
-			glog.Infof("Found %d rebooted nodes, setting annotation %q to false", len(nodes), constants.AnnotationOkToReboot)
+		if len(justRebootedNodes) > 0 {
+			glog.Infof("Found %d rebooted nodes, setting annotation %q to false", len(justRebootedNodes), constants.AnnotationOkToReboot)
 		}
 
-		for _, n := range nodes {
+		for _, n := range justRebootedNodes {
 			if err := k8sutil.SetNodeAnnotations(k.nc, n.Name, map[string]string{
 				constants.AnnotationOkToReboot: constants.False,
 			}); err != nil {
@@ -101,49 +107,48 @@ func (k *Kontroller) Run() error {
 			continue
 		}
 
-		nodes = k8sutil.FilterNodesByAnnotation(nodelist.Items, wantsRebootSelector)
-
-		// pick N of these machines
-		// TODO: for now, synchronous with N == 1. might be async w/ a channel in the future to handle N > 1
-		if len(nodes) == 0 {
+		// Verify no nodes are still in the process of rebooting to avoid rebooting N > maxRebootingNodes
+		rebootingNodes := k8sutil.FilterNodesByAnnotation(nodelist.Items, stillRebootingSelector)
+		if len(rebootingNodes) >= maxRebootingNodes {
+			glog.Infof("Found %d (of max %d) rebooting nodes; waiting for completion", len(rebootingNodes), maxRebootingNodes)
 			continue
 		}
 
-		n := nodes[0]
+		rebootableNodes := k8sutil.FilterNodesByAnnotation(nodelist.Items, wantsRebootSelector)
+		if len(rebootableNodes) == 0 {
+			continue
+		}
 
-		glog.Infof("Found %d nodes that need a reboot, rebooting %q", len(nodes), n.Name)
+		remainingRebootableCount := maxRebootingNodes - len(rebootingNodes)
+		// pick N of the eligible candidates to reboot
+		chosenNodes := make([]*v1api.Node, 0, remainingRebootableCount)
+		for i := 0; i < remainingRebootableCount && i < len(rebootableNodes); i++ {
+			chosenNodes = append(chosenNodes, &rebootableNodes[i])
+		}
 
-		k.handleReboot(&n)
+		glog.Infof("Found %d nodes that need a reboot", len(chosenNodes))
+		for _, node := range chosenNodes {
+			k.markNodeRebootable(node)
+		}
+
 	}
 }
 
-func (k *Kontroller) handleReboot(n *v1api.Node) {
-	// node wants to reboot, so let it.
-	if err := k8sutil.SetNodeAnnotations(k.nc, n.Name, map[string]string{
-		constants.AnnotationOkToReboot: constants.True,
+func (k *Kontroller) markNodeRebootable(n *v1api.Node) {
+	glog.V(4).Infof("marking %s ok to reboot", n.Name)
+	if err := k8sutil.UpdateNodeRetry(k.nc, n.Name, func(node *v1api.Node) {
+		// TODO; reuse selector if I can figure out how to apply it to a single node
+		if node.Annotations[constants.AnnotationOkToReboot] == constants.True {
+			glog.Warningf("Node %v became rebootable while we were trying to mark it so", node.Name)
+			return
+		}
+		if node.Annotations[constants.AnnotationRebootNeeded] != constants.True {
+			glog.Warningf("Node %v became not-ok-for-reboot while trying to mark it ready", node.Name)
+			return
+		}
+		node.Annotations[constants.AnnotationOkToReboot] = constants.True
 	}); err != nil {
 		glog.Infof("Failed to set annotation %q on node %q: %v", constants.AnnotationOkToReboot, n.Name, err)
 		return
 	}
-
-	// wait for it to come back...
-	watcher, err := k.nc.Watch(v1api.ListOptions{
-		FieldSelector:   fields.OneTermEqualSelector("metadata.name", n.Name).String(),
-		ResourceVersion: n.ResourceVersion,
-	})
-
-	conds := []watch.ConditionFunc{
-		k8sutil.NodeAnnotationCondition(constants.AnnotationOkToReboot, constants.True),
-		k8sutil.NodeAnnotationCondition(constants.AnnotationRebootNeeded, constants.False),
-		k8sutil.NodeAnnotationCondition(constants.AnnotationRebootInProgress, constants.False),
-	}
-	_, err = watch.Until(time.Hour*1, watcher, conds...)
-	if err != nil {
-		glog.Infof("Waiting for label %q on node %q failed: %v", constants.AnnotationOkToReboot, n.Name, err)
-		glog.Infof("Failed to wait for successful reboot of node %q", n.Name)
-
-		k.er.Eventf(n, api.EventTypeWarning, eventReasonRebootFailed, "Timed out waiting for node to return after a reboot")
-	}
-
-	// node rebooted successfully, or at least set the labels we expected from klocksmith after a reboot.
 }
