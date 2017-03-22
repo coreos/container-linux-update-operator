@@ -111,6 +111,12 @@ func (k *Klocksmith) Run() error {
 		return fmt.Errorf("failed to set node info: %v", err)
 	}
 
+	// we are schedulable now.
+	glog.Info("Marking node as schedulable")
+	if err := k8sutil.Unschedulable(k.nc, k.node, false); err != nil {
+		return err
+	}
+
 	// set coreos.com/update1/reboot-in-progress=false and
 	// coreos.com/update1/reboot-needed=false
 	anno := map[string]string{
@@ -119,12 +125,6 @@ func (k *Klocksmith) Run() error {
 	}
 	glog.Infof("Setting annotations %#v", anno)
 	if err := k8sutil.SetNodeAnnotations(k.nc, k.node, anno); err != nil {
-		return err
-	}
-
-	// we are schedulable now.
-	glog.Info("Marking node as schedulable")
-	if err := k8sutil.Unschedulable(k.nc, k.node, false); err != nil {
 		return err
 	}
 
