@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"os"
 
@@ -37,7 +38,7 @@ func main() {
 
 	analytics.ControllerStarted()
 
-	if err := o.Run(); err != nil {
+	if err := o.Run(context.Background()); err != nil {
 		glog.Fatalf("Error while running %s: %v", os.Args[0], err)
 	}
 }

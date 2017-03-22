@@ -33,5 +33,11 @@ import:
   subpackages:
   - proto
   - sortkeys
+- package: k8s.io/kubernetes
+  version: ~v1.5.4
+  subpackages:
+  - pkg/client/leaderelection
+  - pkg/client/leaderelection/resourcelock
+  - pkg/client/clientset_generated/internalclientset/typed/core/internalversion
 testImport:
 - package: github.com/golang/mock

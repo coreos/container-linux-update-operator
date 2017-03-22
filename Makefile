@@ -1,4 +1,4 @@
-.PHONY:	all bin precompile image clean
+.PHONY:	all bin precompile image clean test
 
 all:	bin
 
