@@ -185,6 +185,7 @@ func (k *Kontroller) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	glog.V(5).Info("Starting run loop")
 
 	// Check leadership before each api write
 	stillLeader := func() error {
@@ -199,11 +200,15 @@ func (k *Kontroller) Run(ctx context.Context) error {
 	rl := flowcontrol.NewTokenBucketRateLimiter(0.2, 1)
 	for {
 		rl.Accept()
+		glog.V(4).Info("Going through a loop cycle")
+
 		nodelist, err := k.nc.List(v1api.ListOptions{})
 		if err != nil {
 			glog.Infof("Failed listing nodes %v", err)
 			continue
 		}
+
+		glog.V(6).Infof("Found nodes: %+v", nodelist.Items)
 
 		justRebootedNodes := k8sutil.FilterNodesByAnnotation(nodelist.Items, justRebootedSelector)
 
@@ -212,6 +217,7 @@ func (k *Kontroller) Run(ctx context.Context) error {
 		}
 
 		for _, n := range justRebootedNodes {
+			glog.V(5).Infof("Setting 'ok-to-reboot=false' for %v", n.Name)
 			if leaderErr := stillLeader(); leaderErr != nil {
 				return leaderErr
 			}
@@ -230,6 +236,7 @@ func (k *Kontroller) Run(ctx context.Context) error {
 
 		// Verify no nodes are still in the process of rebooting to avoid rebooting N > maxRebootingNodes
 		rebootingNodes := k8sutil.FilterNodesByAnnotation(nodelist.Items, stillRebootingSelector)
+		glog.V(6).Infof("Found %+v rebooting nodes", rebootingNodes)
 		if len(rebootingNodes) >= maxRebootingNodes {
 			glog.Infof("Found %d (of max %d) rebooting nodes; waiting for completion", len(rebootingNodes), maxRebootingNodes)
 			continue
