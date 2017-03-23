@@ -10,6 +10,7 @@ import (
 	"github.com/golang/glog"
 	v1core "k8s.io/client-go/kubernetes/typed/core/v1"
 	v1api "k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/pkg/fields"
 	"k8s.io/client-go/pkg/watch"
 )
 
@@ -21,16 +22,12 @@ const (
 
 // NodeAnnotationCondition returns a condition function that succeeds when a
 // node being watched has an annotation of key equal to value.
-func NodeAnnotationCondition(key, value string) watch.ConditionFunc {
+func NodeAnnotationCondition(selector fields.Selector) watch.ConditionFunc {
 	return func(event watch.Event) (bool, error) {
 		switch event.Type {
 		case watch.Modified:
 			node := event.Object.(*v1api.Node)
-			if node.Annotations[key] == value {
-				return true, nil
-			}
-
-			return false, nil
+			return selector.Matches(fields.Set(node.Annotations)), nil
 		}
 
 		return false, fmt.Errorf("unhandled watch case for %#v", event)

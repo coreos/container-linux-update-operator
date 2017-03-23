@@ -28,6 +28,15 @@ type Klocksmith struct {
 	lc   *login1.Conn
 }
 
+var (
+	shouldRebootSelector = fields.Set(map[string]string{
+		constants.AnnotationOkToReboot:   constants.True,
+		constants.AnnotationRebootNeeded: constants.True,
+	}).AsSelector()
+
+	shouldntRebootSelector = fields.OneTermEqualSelector(constants.AnnotationOkToReboot, constants.False)
+)
+
 func New(node string) (*Klocksmith, error) {
 	// set up kubernetes in-cluster client
 	kc, err := k8sutil.InClusterClient()
@@ -125,6 +134,11 @@ func (k *Klocksmith) Run() error {
 	}
 	glog.Infof("Setting annotations %#v", anno)
 	if err := k8sutil.SetNodeAnnotations(k.nc, k.node, anno); err != nil {
+		return err
+	}
+	// Since we set 'reboot-needed=false', 'ok-to-reboot' should clear.
+	// Wait for it to do so, else we might start reboot-looping
+	if err := k.waitForNotOkToReboot(); err != nil {
 		return err
 	}
 
@@ -235,10 +249,15 @@ func (k *Klocksmith) waitForRebootSignal() error {
 	return nil
 }
 
+// waitForOkToReboot waits for both 'ok-to-reboot' and 'needs-reboot' to be true.
 func (k *Klocksmith) waitForOkToReboot() error {
 	n, err := k.nc.Get(k.node)
 	if err != nil {
 		return fmt.Errorf("failed to get self node (%q): %v", k.node, err)
+	}
+
+	if n.Annotations[constants.AnnotationOkToReboot] == constants.True && n.Annotations[constants.AnnotationRebootNeeded] == constants.True {
+		return nil
 	}
 
 	// XXX: set timeout > 0?
@@ -252,7 +271,7 @@ func (k *Klocksmith) waitForOkToReboot() error {
 
 	// hopefully 24 hours is enough time between indicating we need a
 	// reboot and the controller telling us to do it
-	ev, err := watch.Until(time.Hour*24, watcher, k8sutil.NodeAnnotationCondition(constants.AnnotationOkToReboot, constants.True))
+	ev, err := watch.Until(time.Hour*24, watcher, k8sutil.NodeAnnotationCondition(shouldRebootSelector))
 	if err != nil {
 		return fmt.Errorf("waiting for annotation %q failed: %v", constants.AnnotationOkToReboot, err)
 	}
@@ -264,6 +283,46 @@ func (k *Klocksmith) waitForOkToReboot() error {
 	}
 
 	if no.Annotations[constants.AnnotationOkToReboot] != constants.True {
+		panic("event did not contain annotation expected")
+	}
+
+	return nil
+}
+
+func (k *Klocksmith) waitForNotOkToReboot() error {
+	n, err := k.nc.Get(k.node)
+	if err != nil {
+		return fmt.Errorf("failed to get self node (%q): %v", k.node, err)
+	}
+
+	if n.Annotations[constants.AnnotationOkToReboot] != constants.True {
+		return nil
+	}
+
+	// XXX: set timeout > 0?
+	watcher, err := k.nc.Watch(v1api.ListOptions{
+		FieldSelector:   fields.OneTermEqualSelector("metadata.name", n.Name).String(),
+		ResourceVersion: n.ResourceVersion,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to watch self node (%q): %v", k.node, err)
+	}
+
+	// Within 24 hours of indicating we don't need a reboot we should be given a not-ok.
+	// If that isn't the case, it likely means the operator isn't running, and
+	// we'll just crash-loop in that case, and hopefully that will help the user realize something's wrong.
+	ev, err := watch.Until(time.Hour*24, watcher, k8sutil.NodeAnnotationCondition(shouldntRebootSelector))
+	if err != nil {
+		return fmt.Errorf("waiting for annotation %q failed: %v", constants.AnnotationOkToReboot, err)
+	}
+
+	// sanity check
+	no, ok := ev.Object.(*v1api.Node)
+	if !ok {
+		panic("event contains a non-*api.Node object")
+	}
+
+	if no.Annotations[constants.AnnotationOkToReboot] == constants.True {
 		panic("event did not contain annotation expected")
 	}
 
