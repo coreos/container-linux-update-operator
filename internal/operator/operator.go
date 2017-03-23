@@ -268,15 +268,11 @@ func (k *Kontroller) Run(ctx context.Context) error {
 func (k *Kontroller) markNodeRebootable(n *v1api.Node) {
 	glog.V(4).Infof("marking %s ok to reboot", n.Name)
 	if err := k8sutil.UpdateNodeRetry(k.nc, n.Name, func(node *v1api.Node) {
-		// TODO; reuse selector if I can figure out how to apply it to a single node
-		if node.Annotations[constants.AnnotationOkToReboot] == constants.True {
-			glog.Warningf("Node %v became rebootable while we were trying to mark it so", node.Name)
+		if !wantsRebootSelector.Matches(fields.Set(node.Annotations)) {
+			glog.Warningf("Node %v no longer wanted to a reboot while we were trying to mark it so: %v", node.Name, node.Annotations)
 			return
 		}
-		if node.Annotations[constants.AnnotationRebootNeeded] != constants.True {
-			glog.Warningf("Node %v became not-ok-for-reboot while trying to mark it ready", node.Name)
-			return
-		}
+
 		node.Annotations[constants.AnnotationOkToReboot] = constants.True
 	}); err != nil {
 		glog.Infof("Failed to set annotation %q on node %q: %v", constants.AnnotationOkToReboot, n.Name, err)
