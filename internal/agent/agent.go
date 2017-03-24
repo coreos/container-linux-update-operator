@@ -33,8 +33,6 @@ var (
 		constants.AnnotationOkToReboot:   constants.True,
 		constants.AnnotationRebootNeeded: constants.True,
 	}).AsSelector()
-
-	shouldntRebootSelector = fields.OneTermEqualSelector(constants.AnnotationOkToReboot, constants.False)
 )
 
 func New(node string) (*Klocksmith, error) {
@@ -311,16 +309,30 @@ func (k *Klocksmith) waitForNotOkToReboot() error {
 	// Within 24 hours of indicating we don't need a reboot we should be given a not-ok.
 	// If that isn't the case, it likely means the operator isn't running, and
 	// we'll just crash-loop in that case, and hopefully that will help the user realize something's wrong.
-	ev, err := watch.Until(time.Hour*24, watcher, k8sutil.NodeAnnotationCondition(shouldntRebootSelector))
+	// Use a custom condition function to use the more correct 'OkToReboot !=
+	// true' vs '== False'; due to the operator matching on '== True', and not
+	// going out of its way to convert '' => 'False', checking the exact inverse
+	// of what the operator checks is the correct thing to do.
+	ev, err := watch.Until(time.Hour*24, watcher, watch.ConditionFunc(func(event watch.Event) (bool, error) {
+		switch event.Type {
+		case watch.Error:
+			return false, fmt.Errorf("error watching node: %v", event.Object)
+		case watch.Deleted:
+			return false, fmt.Errorf("our node was deleted while we were waiting for ready")
+		}
+
+		no := event.Object.(*v1api.Node)
+		if no.Annotations[constants.AnnotationOkToReboot] != constants.True {
+			return true, nil
+		}
+		return false, nil
+	}))
 	if err != nil {
 		return fmt.Errorf("waiting for annotation %q failed: %v", constants.AnnotationOkToReboot, err)
 	}
 
 	// sanity check
-	no, ok := ev.Object.(*v1api.Node)
-	if !ok {
-		panic("event contains a non-*api.Node object")
-	}
+	no := ev.Object.(*v1api.Node)
 
 	if no.Annotations[constants.AnnotationOkToReboot] == constants.True {
 		panic("event did not contain annotation expected")
