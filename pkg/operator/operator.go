@@ -31,7 +31,10 @@ const (
 	eventReasonRebootFailed            = "RebootFailed"
 	eventSourceComponent               = "update-operator"
 	leaderElectionEventSourceComponent = "update-operator-leader-election"
-	maxRebootingNodes                  = 1
+	// agentDefaultAppName is the label value for the 'app' key that agents are
+	// expected to be labeled with.
+	agentDefaultAppName = "container-linux-update-agent"
+	maxRebootingNodes   = 1
 
 	leaderElectionResourceName = "container-linux-update-operator-lock"
 
