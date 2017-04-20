@@ -14,10 +14,10 @@ import (
 	"k8s.io/client-go/pkg/util/wait"
 	"k8s.io/client-go/pkg/watch"
 
-	"github.com/coreos/container-linux-update-operator/internal/constants"
-	"github.com/coreos/container-linux-update-operator/internal/drain"
-	"github.com/coreos/container-linux-update-operator/internal/k8sutil"
-	"github.com/coreos/container-linux-update-operator/internal/updateengine"
+	"github.com/coreos/container-linux-update-operator/pkg/constants"
+	"github.com/coreos/container-linux-update-operator/pkg/drain"
+	"github.com/coreos/container-linux-update-operator/pkg/k8sutil"
+	"github.com/coreos/container-linux-update-operator/pkg/updateengine"
 )
 
 type Klocksmith struct {

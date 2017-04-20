@@ -7,7 +7,7 @@ import (
 	"github.com/coreos/pkg/flagutil"
 	"github.com/golang/glog"
 
-	"github.com/coreos/container-linux-update-operator/internal/agent"
+	"github.com/coreos/container-linux-update-operator/pkg/agent"
 )
 
 var (

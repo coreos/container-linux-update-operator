@@ -23,8 +23,8 @@ import (
 	krecord "k8s.io/kubernetes/pkg/client/record"
 	krest "k8s.io/kubernetes/pkg/client/restclient"
 
-	"github.com/coreos/container-linux-update-operator/internal/constants"
-	"github.com/coreos/container-linux-update-operator/internal/k8sutil"
+	"github.com/coreos/container-linux-update-operator/pkg/constants"
+	"github.com/coreos/container-linux-update-operator/pkg/k8sutil"
 )
 
 const (
