@@ -86,6 +86,11 @@ func New() (*Kontroller, error) {
 		return nil, fmt.Errorf("error creating Kubernetes client: %v", err)
 	}
 
+	// make tpr
+	if err := k8sutil.CreateTPR(kc, "reboot-group.coreos.com", "v1", "Group of CoreOS nodes"); err != nil {
+		return nil, fmt.Errorf("error creating TPR: %v", err)
+	}
+
 	// node interface
 	nc := kc.Nodes()
 
