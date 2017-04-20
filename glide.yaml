@@ -1,4 +1,4 @@
-package: github.com/coreos-inc/container-linux-update-operator
+package: github.com/coreos/container-linux-update-operator
 import:
 - package: github.com/coreos/go-systemd
   version: v14
