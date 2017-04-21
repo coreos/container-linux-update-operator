@@ -8,8 +8,8 @@ import (
 	"github.com/coreos/pkg/flagutil"
 	"github.com/golang/glog"
 
-	"github.com/coreos-inc/container-linux-update-operator/internal/analytics"
-	"github.com/coreos-inc/container-linux-update-operator/internal/operator"
+	"github.com/coreos/container-linux-update-operator/pkg/analytics"
+	"github.com/coreos/container-linux-update-operator/pkg/operator"
 )
 
 var (
