@@ -14,7 +14,7 @@ import (
 
 var (
 	analyticsEnabled = flag.Bool("analytics", true, "Send analytics to Google Analytics")
-	//max    = flags.Int("max", 1, "Maximum number of nodes to reboot")
+	manageAgent      = flag.Bool("manage-agent", true, "manage the associated update-agent")
 )
 
 func main() {

@@ -186,7 +186,7 @@ func (k *Kontroller) withLeaderElection(ctx context.Context) (context.Context, e
 	return newCtx, nil
 }
 
-func (k *Kontroller) Run(ctx context.Context) error {
+func (k *Kontroller) Run(ctx context.Context, manageAgent bool) error {
 	ctx, err := k.withLeaderElection(ctx)
 	if err != nil {
 		return err
@@ -212,6 +212,19 @@ func (k *Kontroller) Run(ctx context.Context) error {
 		if err != nil {
 			glog.Infof("Failed listing nodes %v", err)
 			continue
+		}
+
+		if manageAgent {
+			agentsReady, err := xyz()
+			if err != nil {
+				glog.Errorf("unable to ensure managed agents are ready: %v", err)
+				continue
+			}
+			if !agentsReady {
+				glog.V(4).Infof("waiting for managed agents to be ready, not doing additional work now")
+				// TODO: if this has happened for a long enough duration, it should become an error.
+				continue
+			}
 		}
 
 		glog.V(6).Infof("Found nodes: %+v", nodelist.Items)
