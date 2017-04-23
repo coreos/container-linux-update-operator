@@ -61,4 +61,10 @@ const (
 
 	// Key set by the update-agent to the value of "VERSION" in /etc/os-release.
 	LabelVersion = Prefix + "version"
+
+	// AgentVersion is the key used to indicate the
+	// container-linux-update-operator's agent's version.
+	// The value is a semver-parseable string. It should be present on each agent
+	// pod, as well as on the daemonset that manages them.
+	AgentVersion = Prefix + "agent-versoin"
 )

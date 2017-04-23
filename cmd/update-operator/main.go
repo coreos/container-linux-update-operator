@@ -14,7 +14,8 @@ import (
 
 var (
 	analyticsEnabled = flag.Bool("analytics", true, "Send analytics to Google Analytics")
-	manageAgent      = flag.Bool("manage-agent", true, "manage the associated update-agent")
+	manageAgent      = flag.Bool("manage-agent", true, "Manage the associated update-agent")
+	agentImageRepo   = flag.Bool("agent-image-repo", "quay.io/coreos/container-linux-update-operator", "The image to use for the managed agent, without version tag")
 )
 
 func main() {
@@ -38,7 +39,7 @@ func main() {
 
 	analytics.ControllerStarted()
 
-	if err := o.Run(context.Background()); err != nil {
+	if err := o.Run(context.Background(), *manageAgent, *agentImageRepo); err != nil {
 		glog.Fatalf("Error while running %s: %v", os.Args[0], err)
 	}
 }
