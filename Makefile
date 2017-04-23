@@ -5,7 +5,9 @@ all:	bin
 bin:	bin/update-agent bin/update-operator
 
 bin/%:
-	CGO_ENABLED=0 go build -ldflags '-s -w' -tags netgo -o $@ ./cmd/$*
+	CGO_ENABLED=0 go build \
+							-ldflags '-s -w -X github.com/coreos/container-linux-update-operator/pkg/version.Version=$(shell cat VERSION) -X github.com/coreos/container-linux-update-operator/pkg/version.Commit=$(shell git rev-parse HEAD)' \
+							-tags netgo -o $@ ./cmd/$*
 
 precompile:
 	CGO_ENABLED=0 go test -i -tags netgo ./cmd/...
