@@ -184,15 +184,25 @@ func (k *Kontroller) withLeaderElection() error {
 	return nil
 }
 
-func (k *Kontroller) Run(ctx context.Context, manageAgent bool, agentImageRepo string, analyticsEnabled bool) error {
+func (k *Kontroller) Run(ctx context.Context, manageAgent bool, agentImageRepo string) error {
 	err := k.withLeaderElection()
 	if err != nil {
 		return err
 	}
 	glog.V(5).Info("Starting run loop")
 
-
 	rl := flowcontrol.NewTokenBucketRateLimiter(0.2, 1)
+
+	// Before doing anytihng else, make sure the associated agent daemonset is
+	// ready if it's our responsibility.
+	if manageAgent {
+		err := k.runDaemonsetUpdate(agentImageRepo)
+		if err != nil {
+			glog.Errorf("unable to ensure managed agents are ready: %v", err)
+			return err
+		}
+	}
+
 	for {
 		rl.Accept()
 		glog.V(4).Info("Going through a loop cycle")
@@ -201,19 +211,6 @@ func (k *Kontroller) Run(ctx context.Context, manageAgent bool, agentImageRepo s
 		if err != nil {
 			glog.Infof("Failed listing nodes %v", err)
 			continue
-		}
-
-		if manageAgent {
-			agentsReady, err := xyz()
-			if err != nil {
-				glog.Errorf("unable to ensure managed agents are ready: %v", err)
-				continue
-			}
-			if !agentsReady {
-				glog.V(4).Infof("waiting for managed agents to be ready, not doing additional work now")
-				// TODO: if this has happened for a long enough duration, it should become an error.
-				continue
-			}
 		}
 
 		glog.V(6).Infof("Found nodes: %+v", nodelist.Items)
