@@ -19,7 +19,7 @@ clean:
 	rm -rf bin
 
 test:
-	CGO_ENABLED=0 go test -tags netgo -v ./internal/...
+	CGO_ENABLED=0 go test -tags netgo -v ./pkg/...
 
 vendor:
 	glide install --strip-vendor
