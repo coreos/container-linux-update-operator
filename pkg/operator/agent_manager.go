@@ -129,6 +129,14 @@ func agentDaemonsetSpec(repo string) *v1beta1.DaemonSet {
 					},
 				},
 				Spec: v1.PodSpec{
+					// Update the master nodes too
+					Tolerations: []v1.Toleration{
+						{
+							Key:      "node-role.kubernetes.io/master",
+							Operator: v1.TolerationOpExists,
+							Effect:   v1.TaintEffectNoSchedule,
+						},
+					},
 					Containers: []v1.Container{
 						{
 							Name:    "update-agent",
