@@ -2,6 +2,7 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: container-linux-update-operator
+  namespace: kube-system
 spec:
   replicas: 1
   template:
