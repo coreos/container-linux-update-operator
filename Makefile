@@ -1,4 +1,4 @@
-.PHONY:	all bin precompile image clean test
+.PHONY:	all bin precompile image clean test vendor
 
 all:	bin
 
@@ -22,6 +22,6 @@ test:
 	CGO_ENABLED=0 go test -tags netgo -v ./pkg/...
 
 vendor:
-	glide install --strip-vendor
+	glide update --strip-vendor
 
 integration-test:
