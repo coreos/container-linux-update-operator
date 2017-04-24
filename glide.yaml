@@ -12,7 +12,7 @@ import:
   version: v4.0.0
 - package: github.com/jpillora/go-ogle-analytics
 - package: k8s.io/client-go
-  version: v2.0.0
+  version: v3.0.0-beta.0
   subpackages:
   - kubernetes
   - kubernetes/typed/core/v1
@@ -34,10 +34,12 @@ import:
   - proto
   - sortkeys
 - package: k8s.io/kubernetes
-  version: ~v1.5.4
+  version: ~v1.6.0
   subpackages:
   - pkg/client/leaderelection
   - pkg/client/leaderelection/resourcelock
   - pkg/client/clientset_generated/internalclientset/typed/core/internalversion
+  - pkg/kubelet/types
+- package: github.com/golang/glog
 testImport:
 - package: github.com/golang/mock
