@@ -80,6 +80,10 @@ type Kontroller struct {
 
 	leaderElectionClient        kinternalclientset.Interface
 	leaderElectionEventRecorder krecord.EventRecorder
+	// namespace is the kubernetes namespace any resources (e.g. locks,
+	// configmaps, agents) should be created and read under.
+	// It will be set to the namespace the operator is running in automatically.
+	namespace string
 }
 
 func New() (*Kontroller, error) {
@@ -114,18 +118,17 @@ func New() (*Kontroller, error) {
 		Component: leaderElectionEventSourceComponent,
 	})
 
-	return &Kontroller{kc, nc, er, leaderElectionClient, leaderElectionEventRecorder}, nil
+	namespace := os.Getenv("POD_NAMESPACE")
+	if namespace == "" {
+		return nil, fmt.Errorf("unable to determine operator namespace: please ensure POD_NAMESPACE environment variable is set")
+	}
+
+	return &Kontroller{kc, nc, er, leaderElectionClient, leaderElectionEventRecorder, namespace}, nil
 }
 
 // withLeaderElection creates a new context which is cancelled when this
 // operator does not hold a lock to operate on the cluster
 func (k *Kontroller) withLeaderElection(ctx context.Context) (context.Context, error) {
-
-	lockNamespace := os.Getenv("POD_NAMESPACE")
-	if lockNamespace == "" {
-		lockNamespace = "kube-system"
-	}
-
 	// TODO: a better id might be necessary.
 	// Currently, KVO uses env.POD_NAME and the upstream controller-manager uses this.
 	// Both end up having the same value in general, but Hostname is
@@ -143,7 +146,7 @@ func (k *Kontroller) withLeaderElection(ctx context.Context) (context.Context, e
 	// to use that. There will be version-cross-compatibility-dragons.
 	resLock := &kresourcelock.EndpointsLock{
 		EndpointsMeta: kapi.ObjectMeta{
-			Namespace: lockNamespace,
+			Namespace: k.namespace,
 			Name:      leaderElectionResourceName,
 		},
 		Client: k.leaderElectionClient,
