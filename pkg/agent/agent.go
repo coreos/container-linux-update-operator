@@ -7,12 +7,13 @@ import (
 
 	"github.com/coreos/go-systemd/login1"
 	"github.com/golang/glog"
+	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	v1core "k8s.io/client-go/kubernetes/typed/core/v1"
-	v1api "k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/pkg/fields"
-	"k8s.io/client-go/pkg/util/wait"
-	"k8s.io/client-go/pkg/watch"
+	"k8s.io/client-go/pkg/api/v1"
 
 	"github.com/coreos/container-linux-update-operator/pkg/constants"
 	"github.com/coreos/container-linux-update-operator/pkg/drain"
@@ -181,7 +182,7 @@ func (k *Klocksmith) Run() error {
 	// TODO(mischief): explicitly don't terminate self? we'll probably just be a
 	// mirror pod or daemonset anyway..
 	glog.Infof("Deleting %d pods", len(pods))
-	deleteOptions := v1api.NewDeleteOptions(30)
+	deleteOptions := v1meta.NewDeleteOptions(30)
 	for _, pod := range pods {
 		glog.Infof("Terminating pod %q...", pod.Name)
 		if err := k.kc.Pods(pod.Namespace).Delete(pod.Name, deleteOptions); err != nil {
@@ -249,7 +250,7 @@ func (k *Klocksmith) waitForRebootSignal() error {
 
 // waitForOkToReboot waits for both 'ok-to-reboot' and 'needs-reboot' to be true.
 func (k *Klocksmith) waitForOkToReboot() error {
-	n, err := k.nc.Get(k.node)
+	n, err := k.nc.Get(k.node, v1meta.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to get self node (%q): %v", k.node, err)
 	}
@@ -259,7 +260,7 @@ func (k *Klocksmith) waitForOkToReboot() error {
 	}
 
 	// XXX: set timeout > 0?
-	watcher, err := k.nc.Watch(v1api.ListOptions{
+	watcher, err := k.nc.Watch(v1meta.ListOptions{
 		FieldSelector:   fields.OneTermEqualSelector("metadata.name", n.Name).String(),
 		ResourceVersion: n.ResourceVersion,
 	})
@@ -275,7 +276,7 @@ func (k *Klocksmith) waitForOkToReboot() error {
 	}
 
 	// sanity check
-	no, ok := ev.Object.(*v1api.Node)
+	no, ok := ev.Object.(*v1.Node)
 	if !ok {
 		panic("event contains a non-*api.Node object")
 	}
@@ -288,7 +289,7 @@ func (k *Klocksmith) waitForOkToReboot() error {
 }
 
 func (k *Klocksmith) waitForNotOkToReboot() error {
-	n, err := k.nc.Get(k.node)
+	n, err := k.nc.Get(k.node, v1meta.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to get self node (%q): %v", k.node, err)
 	}
@@ -298,7 +299,7 @@ func (k *Klocksmith) waitForNotOkToReboot() error {
 	}
 
 	// XXX: set timeout > 0?
-	watcher, err := k.nc.Watch(v1api.ListOptions{
+	watcher, err := k.nc.Watch(v1meta.ListOptions{
 		FieldSelector:   fields.OneTermEqualSelector("metadata.name", n.Name).String(),
 		ResourceVersion: n.ResourceVersion,
 	})
@@ -321,7 +322,7 @@ func (k *Klocksmith) waitForNotOkToReboot() error {
 			return false, fmt.Errorf("our node was deleted while we were waiting for ready")
 		}
 
-		no := event.Object.(*v1api.Node)
+		no := event.Object.(*v1.Node)
 		if no.Annotations[constants.AnnotationOkToReboot] != constants.True {
 			return true, nil
 		}
@@ -332,7 +333,7 @@ func (k *Klocksmith) waitForNotOkToReboot() error {
 	}
 
 	// sanity check
-	no := ev.Object.(*v1api.Node)
+	no := ev.Object.(*v1.Node)
 
 	if no.Annotations[constants.AnnotationOkToReboot] == constants.True {
 		panic("event did not contain annotation expected")
@@ -341,7 +342,7 @@ func (k *Klocksmith) waitForNotOkToReboot() error {
 	return nil
 }
 
-func (k *Klocksmith) getPodsForDeletion() ([]v1api.Pod, error) {
+func (k *Klocksmith) getPodsForDeletion() ([]v1.Pod, error) {
 	pods, err := drain.GetPodsForDeletion(k.kc, k.node)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get list of pods for deletion: %v", err)
@@ -351,7 +352,7 @@ func (k *Klocksmith) getPodsForDeletion() ([]v1api.Pod, error) {
 	// critical components such as kube-scheduler and
 	// kube-controller-manager.
 
-	pods = k8sutil.FilterPods(pods, func(p *v1api.Pod) bool {
+	pods = k8sutil.FilterPods(pods, func(p *v1.Pod) bool {
 		if p.Namespace == "kube-system" {
 			return false
 		}

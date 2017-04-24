@@ -7,21 +7,21 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	v1core "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/pkg/api"
 	v1api "k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/pkg/fields"
-	"k8s.io/client-go/pkg/util/flowcontrol"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
+	krecord "k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/flowcontrol"
 
 	// These should be replaced with client-go equivilents when available
-	kapi "k8s.io/kubernetes/pkg/api"
-	kinternalclientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
-	kv1core "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/internalversion"
+	kinternalclientset "k8s.io/kubernetes/pkg/client/clientset_generated/clientset"
 	kleaderelection "k8s.io/kubernetes/pkg/client/leaderelection"
 	kresourcelock "k8s.io/kubernetes/pkg/client/leaderelection/resourcelock"
-	krecord "k8s.io/kubernetes/pkg/client/record"
-	krest "k8s.io/kubernetes/pkg/client/restclient"
 
 	"github.com/coreos/container-linux-update-operator/pkg/constants"
 	"github.com/coreos/container-linux-update-operator/pkg/k8sutil"
@@ -99,9 +99,9 @@ func New() (*Kontroller, error) {
 	// create event emitter
 	broadcaster := record.NewBroadcaster()
 	broadcaster.StartRecordingToSink(&v1core.EventSinkImpl{Interface: kc.Events("")})
-	er := broadcaster.NewRecorder(v1api.EventSource{Component: eventSourceComponent})
+	er := broadcaster.NewRecorder(api.Scheme, v1api.EventSource{Component: eventSourceComponent})
 
-	leaderElectionClientConfig, err := krest.InClusterConfig()
+	leaderElectionClientConfig, err := rest.InClusterConfig()
 	if err != nil {
 		return nil, fmt.Errorf("error creating leader election client config: %v", err)
 	}
@@ -110,11 +110,11 @@ func New() (*Kontroller, error) {
 		return nil, fmt.Errorf("error creating leader election client: %v", err)
 	}
 
-	leaderElectionBroadcaster := krecord.NewBroadcaster()
-	leaderElectionBroadcaster.StartRecordingToSink(&kv1core.EventSinkImpl{
-		Interface: leaderElectionClient.Events(""),
+	leaderElectionBroadcaster := record.NewBroadcaster()
+	leaderElectionBroadcaster.StartRecordingToSink(&v1core.EventSinkImpl{
+		Interface: kc.Events(""),
 	})
-	leaderElectionEventRecorder := leaderElectionBroadcaster.NewRecorder(kapi.EventSource{
+	leaderElectionEventRecorder := leaderElectionBroadcaster.NewRecorder(api.Scheme, v1api.EventSource{
 		Component: leaderElectionEventSourceComponent,
 	})
 
@@ -145,7 +145,7 @@ func (k *Kontroller) withLeaderElection() error {
 	// Once https://github.com/kubernetes/kubernetes/pull/42666 is merged, update
 	// to use that. There will be version-cross-compatibility-dragons.
 	resLock := &kresourcelock.EndpointsLock{
-		EndpointsMeta: kapi.ObjectMeta{
+		EndpointsMeta: v1meta.ObjectMeta{
 			Namespace: k.namespace,
 			Name:      leaderElectionResourceName,
 		},
@@ -207,7 +207,7 @@ func (k *Kontroller) Run(ctx context.Context, manageAgent bool, agentImageRepo s
 		rl.Accept()
 		glog.V(4).Info("Going through a loop cycle")
 
-		nodelist, err := k.nc.List(v1api.ListOptions{})
+		nodelist, err := k.nc.List(v1meta.ListOptions{})
 		if err != nil {
 			glog.Infof("Failed listing nodes %v", err)
 			continue
@@ -230,7 +230,7 @@ func (k *Kontroller) Run(ctx context.Context, manageAgent bool, agentImageRepo s
 			}
 		}
 
-		nodelist, err = k.nc.List(v1api.ListOptions{})
+		nodelist, err = k.nc.List(v1meta.ListOptions{})
 		if err != nil {
 			glog.Infof("Failed listing nodes: %v", err)
 			continue
