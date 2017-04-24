@@ -16,7 +16,7 @@ on the node before rebooting.
 Container Linux Update Operator is divided into two parts - `update-operator` and `update-agent`.
 
 `update-agent` runs on each node, waiting for a `UPDATE_STATUS_UPDATED_NEED_REBOOT` signal via dbus from `update_engine`.
-It will indicate via [node annotations](./internal/constants/constants.go) that it needs a reboot.
+It will indicate via [node annotations](./pkg/constants/constants.go) that it needs a reboot.
 
 `update-operator` will watch changes to node annotations, and reboot the nodes as needed.
 It coordinates the reboots of multiple nodes in the cluster, ensuring that not too many are rebooting at once.
