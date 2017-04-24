@@ -5,9 +5,10 @@ package mock_v1
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	api "k8s.io/client-go/pkg/api"
-	v1 "k8s.io/client-go/pkg/api/v1"
-	watch "k8s.io/client-go/pkg/watch"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	types "k8s.io/apimachinery/pkg/types"
+	watch "k8s.io/apimachinery/pkg/watch"
+	v10 "k8s.io/client-go/pkg/api/v1"
 )
 
 // Mock of NodeInterface interface
@@ -31,9 +32,9 @@ func (_m *MockNodeInterface) EXPECT() *_MockNodeInterfaceRecorder {
 	return _m.recorder
 }
 
-func (_m *MockNodeInterface) Create(_param0 *v1.Node) (*v1.Node, error) {
+func (_m *MockNodeInterface) Create(_param0 *v10.Node) (*v10.Node, error) {
 	ret := _m.ctrl.Call(_m, "Create", _param0)
-	ret0, _ := ret[0].(*v1.Node)
+	ret0, _ := ret[0].(*v10.Node)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -62,20 +63,20 @@ func (_mr *_MockNodeInterfaceRecorder) DeleteCollection(arg0, arg1 interface{}) 
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "DeleteCollection", arg0, arg1)
 }
 
-func (_m *MockNodeInterface) Get(_param0 string) (*v1.Node, error) {
-	ret := _m.ctrl.Call(_m, "Get", _param0)
-	ret0, _ := ret[0].(*v1.Node)
+func (_m *MockNodeInterface) Get(_param0 string, _param1 v1.GetOptions) (*v10.Node, error) {
+	ret := _m.ctrl.Call(_m, "Get", _param0, _param1)
+	ret0, _ := ret[0].(*v10.Node)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-func (_mr *_MockNodeInterfaceRecorder) Get(arg0 interface{}) *gomock.Call {
-	return _mr.mock.ctrl.RecordCall(_mr.mock, "Get", arg0)
+func (_mr *_MockNodeInterfaceRecorder) Get(arg0, arg1 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCall(_mr.mock, "Get", arg0, arg1)
 }
 
-func (_m *MockNodeInterface) List(_param0 v1.ListOptions) (*v1.NodeList, error) {
+func (_m *MockNodeInterface) List(_param0 v1.ListOptions) (*v10.NodeList, error) {
 	ret := _m.ctrl.Call(_m, "List", _param0)
-	ret0, _ := ret[0].(*v1.NodeList)
+	ret0, _ := ret[0].(*v10.NodeList)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -84,13 +85,13 @@ func (_mr *_MockNodeInterfaceRecorder) List(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "List", arg0)
 }
 
-func (_m *MockNodeInterface) Patch(_param0 string, _param1 api.PatchType, _param2 []byte, _param3 ...string) (*v1.Node, error) {
+func (_m *MockNodeInterface) Patch(_param0 string, _param1 types.PatchType, _param2 []byte, _param3 ...string) (*v10.Node, error) {
 	_s := []interface{}{_param0, _param1, _param2}
 	for _, _x := range _param3 {
 		_s = append(_s, _x)
 	}
 	ret := _m.ctrl.Call(_m, "Patch", _s...)
-	ret0, _ := ret[0].(*v1.Node)
+	ret0, _ := ret[0].(*v10.Node)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -100,9 +101,9 @@ func (_mr *_MockNodeInterfaceRecorder) Patch(arg0, arg1, arg2 interface{}, arg3 
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Patch", _s...)
 }
 
-func (_m *MockNodeInterface) PatchStatus(_param0 string, _param1 []byte) (*v1.Node, error) {
+func (_m *MockNodeInterface) PatchStatus(_param0 string, _param1 []byte) (*v10.Node, error) {
 	ret := _m.ctrl.Call(_m, "PatchStatus", _param0, _param1)
-	ret0, _ := ret[0].(*v1.Node)
+	ret0, _ := ret[0].(*v10.Node)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -111,9 +112,9 @@ func (_mr *_MockNodeInterfaceRecorder) PatchStatus(arg0, arg1 interface{}) *gomo
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "PatchStatus", arg0, arg1)
 }
 
-func (_m *MockNodeInterface) Update(_param0 *v1.Node) (*v1.Node, error) {
+func (_m *MockNodeInterface) Update(_param0 *v10.Node) (*v10.Node, error) {
 	ret := _m.ctrl.Call(_m, "Update", _param0)
-	ret0, _ := ret[0].(*v1.Node)
+	ret0, _ := ret[0].(*v10.Node)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -122,9 +123,9 @@ func (_mr *_MockNodeInterfaceRecorder) Update(arg0 interface{}) *gomock.Call {
 	return _mr.mock.ctrl.RecordCall(_mr.mock, "Update", arg0)
 }
 
-func (_m *MockNodeInterface) UpdateStatus(_param0 *v1.Node) (*v1.Node, error) {
+func (_m *MockNodeInterface) UpdateStatus(_param0 *v10.Node) (*v10.Node, error) {
 	ret := _m.ctrl.Call(_m, "UpdateStatus", _param0)
-	ret0, _ := ret[0].(*v1.Node)
+	ret0, _ := ret[0].(*v10.Node)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

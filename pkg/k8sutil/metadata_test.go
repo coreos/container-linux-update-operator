@@ -8,8 +8,9 @@ import (
 	"github.com/golang/mock/gomock"
 
 	mock_v1 "github.com/coreos/container-linux-update-operator/pkg/k8sutil/mocks"
-	"k8s.io/client-go/pkg/api/errors"
-	"k8s.io/client-go/pkg/api/unversioned"
+	"k8s.io/apimachinery/pkg/api/errors"
+	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	v1api "k8s.io/client-go/pkg/api/v1"
 )
 
@@ -42,7 +43,7 @@ func TestUpdateNodeRetryHandlesConflict(t *testing.T) {
 	mockNode.SetAnnotations(map[string]string{"counter": "20"})
 	mockNode.SetResourceVersion("20")
 
-	mockNi.EXPECT().Get("mock_node").Return(mockNode, nil).AnyTimes()
+	mockNi.EXPECT().Get("mock_node", v1meta.GetOptions{}).Return(mockNode, nil).AnyTimes()
 
 	// Conflict once; mock that a third party incremented the counter from '20'
 	// to '21' right after the node is returned
@@ -51,7 +52,7 @@ func TestUpdateNodeRetryHandlesConflict(t *testing.T) {
 			// Fake conflict; the counter was incremented elsewhere; resourceVersion is now 21
 			mockNode.SetAnnotations(map[string]string{"counter": "21"})
 			mockNode.SetResourceVersion("21")
-		}).Return(mockNode, errors.NewConflict(unversioned.GroupResource{}, "mock_node", fmt.Errorf("err"))),
+		}).Return(mockNode, errors.NewConflict(schema.GroupResource{}, "mock_node", fmt.Errorf("err"))),
 
 		// And then the successful retry
 		mockNi.EXPECT().Update(mockNode).Return(mockNode, nil),

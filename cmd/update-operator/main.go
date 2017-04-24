@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"os"
 
 	"github.com/coreos/pkg/flagutil"
@@ -10,11 +11,14 @@ import (
 
 	"github.com/coreos/container-linux-update-operator/pkg/analytics"
 	"github.com/coreos/container-linux-update-operator/pkg/operator"
+	"github.com/coreos/container-linux-update-operator/pkg/version"
 )
 
 var (
 	analyticsEnabled = flag.Bool("analytics", true, "Send analytics to Google Analytics")
-	//max    = flags.Int("max", 1, "Maximum number of nodes to reboot")
+	manageAgent      = flag.Bool("manage-agent", true, "Manage the associated update-agent")
+	agentImageRepo   = flag.String("agent-image-repo", "quay.io/coreos/container-linux-update-operator", "The image to use for the managed agent, without version tag")
+	printVersion     = flag.Bool("version", false, "Print version and exit")
 )
 
 func main() {
@@ -23,6 +27,11 @@ func main() {
 
 	if err := flagutil.SetFlagsFromEnv(flag.CommandLine, "UPDATE_OPERATOR"); err != nil {
 		glog.Fatalf("Failed to parse environment variables: %v", err)
+	}
+
+	if *printVersion {
+		fmt.Println(version.Format())
+		os.Exit(0)
 	}
 
 	if *analyticsEnabled {
@@ -38,7 +47,7 @@ func main() {
 
 	analytics.ControllerStarted()
 
-	if err := o.Run(context.Background()); err != nil {
+	if err := o.Run(context.Background(), *manageAgent, *agentImageRepo); err != nil {
 		glog.Fatalf("Error while running %s: %v", os.Args[0], err)
 	}
 }

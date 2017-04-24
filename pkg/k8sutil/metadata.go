@@ -8,10 +8,11 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
+	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/watch"
 	v1core "k8s.io/client-go/kubernetes/typed/core/v1"
 	v1api "k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/pkg/fields"
-	"k8s.io/client-go/pkg/watch"
 )
 
 const (
@@ -41,7 +42,7 @@ func NodeAnnotationCondition(selector fields.Selector) watch.ConditionFunc {
 // a retry is necessary.
 func UpdateNodeRetry(nc v1core.NodeInterface, node string, f func(*v1api.Node)) error {
 	err := RetryOnConflict(DefaultBackoff, func() error {
-		n, getErr := nc.Get(node)
+		n, getErr := nc.Get(node, v1meta.GetOptions{})
 		if getErr != nil {
 			return fmt.Errorf("failed to get node %q: %v", node, getErr)
 		}
@@ -81,7 +82,7 @@ func SetNodeAnnotations(nc v1core.NodeInterface, node string, m map[string]strin
 
 // Unschedulable marks node as schedulable or unschedulable according to sched.
 func Unschedulable(nc v1core.NodeInterface, node string, sched bool) error {
-	n, err := nc.Get(node)
+	n, err := nc.Get(node, v1meta.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to get node %q: %v", node, err)
 	}
