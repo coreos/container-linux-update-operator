@@ -15,11 +15,11 @@ import (
 	v1api "k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
-	krecord "k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/flowcontrol"
 
 	// These should be replaced with client-go equivilents when available
-	kinternalclientset "k8s.io/kubernetes/pkg/client/clientset_generated/clientset"
+	kapi "k8s.io/kubernetes/pkg/api"
+	"k8s.io/kubernetes/pkg/client/clientset_generated/clientset"
 	kleaderelection "k8s.io/kubernetes/pkg/client/leaderelection"
 	kresourcelock "k8s.io/kubernetes/pkg/client/leaderelection/resourcelock"
 
@@ -78,8 +78,8 @@ type Kontroller struct {
 	nc v1core.NodeInterface
 	er record.EventRecorder
 
-	leaderElectionClient        kinternalclientset.Interface
-	leaderElectionEventRecorder krecord.EventRecorder
+	leaderElectionClient        clientset.Interface
+	leaderElectionEventRecorder record.EventRecorder
 	// namespace is the kubernetes namespace any resources (e.g. locks,
 	// configmaps, agents) should be created and read under.
 	// It will be set to the namespace the operator is running in automatically.
@@ -105,16 +105,16 @@ func New() (*Kontroller, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error creating leader election client config: %v", err)
 	}
-	leaderElectionClient, err := kinternalclientset.NewForConfig(leaderElectionClientConfig)
+	leaderElectionClient, err := clientset.NewForConfig(leaderElectionClientConfig)
 	if err != nil {
 		return nil, fmt.Errorf("error creating leader election client: %v", err)
 	}
 
 	leaderElectionBroadcaster := record.NewBroadcaster()
 	leaderElectionBroadcaster.StartRecordingToSink(&v1core.EventSinkImpl{
-		Interface: kc.Events(""),
+		Interface: v1core.New(leaderElectionClient.Core().RESTClient()).Events(""),
 	})
-	leaderElectionEventRecorder := leaderElectionBroadcaster.NewRecorder(api.Scheme, v1api.EventSource{
+	leaderElectionEventRecorder := leaderElectionBroadcaster.NewRecorder(kapi.Scheme, v1api.EventSource{
 		Component: leaderElectionEventSourceComponent,
 	})
 
