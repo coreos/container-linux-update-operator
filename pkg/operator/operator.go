@@ -128,14 +128,14 @@ func New() (*Kontroller, error) {
 
 // withLeaderElection creates a new context which is cancelled when this
 // operator does not hold a lock to operate on the cluster
-func (k *Kontroller) withLeaderElection(ctx context.Context) (context.Context, error) {
+func (k *Kontroller) withLeaderElection() error {
 	// TODO: a better id might be necessary.
 	// Currently, KVO uses env.POD_NAME and the upstream controller-manager uses this.
 	// Both end up having the same value in general, but Hostname is
 	// more likely to have a value.
 	id, err := os.Hostname()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// TODO(euank): this should not use an endpoint due to performance reasons.
@@ -156,9 +156,8 @@ func (k *Kontroller) withLeaderElection(ctx context.Context) (context.Context, e
 		},
 	}
 
-	newCtx, cancelFunc := context.WithCancel(ctx)
 	waitLeading := make(chan struct{})
-	go func(ctx context.Context, waitLeading chan<- struct{}) {
+	go func(waitLeading chan<- struct{}) {
 		// Lease values inspired by a combination of
 		// https://github.com/kubernetes/kubernetes/blob/f7c07a121d2afadde7aa15b12a9d02858b30a0a9/pkg/apis/componentconfig/v1alpha1/defaults.go#L163-L174
 		// and the KVO values
@@ -175,33 +174,23 @@ func (k *Kontroller) withLeaderElection(ctx context.Context) (context.Context, e
 					waitLeading <- struct{}{}
 				},
 				OnStoppedLeading: func() {
-					glog.V(5).Info("stopped leading; calling cancel")
-					cancelFunc()
+					glog.Fatalf("leaderelection lost")
 				},
 			},
 		})
-	}(ctx, waitLeading)
+	}(waitLeading)
 
 	<-waitLeading
-	return newCtx, nil
+	return nil
 }
 
-func (k *Kontroller) Run(ctx context.Context, manageAgent bool) error {
-	ctx, err := k.withLeaderElection(ctx)
+func (k *Kontroller) Run(ctx context.Context, manageAgent bool, agentImageRepo string, analyticsEnabled bool) error {
+	err := k.withLeaderElection()
 	if err != nil {
 		return err
 	}
 	glog.V(5).Info("Starting run loop")
 
-	// Check leadership before each api write
-	stillLeader := func() error {
-		select {
-		case <-ctx.Done():
-			return fmt.Errorf("No longer leader: bailing out: %v", ctx.Err())
-		default:
-			return nil
-		}
-	}
 
 	rl := flowcontrol.NewTokenBucketRateLimiter(0.2, 1)
 	for {
@@ -237,9 +226,6 @@ func (k *Kontroller) Run(ctx context.Context, manageAgent bool) error {
 
 		for _, n := range justRebootedNodes {
 			glog.V(5).Infof("Setting 'ok-to-reboot=false' for %v", n.Name)
-			if leaderErr := stillLeader(); leaderErr != nil {
-				return leaderErr
-			}
 			if err := k8sutil.SetNodeAnnotations(k.nc, n.Name, map[string]string{
 				constants.AnnotationOkToReboot: constants.False,
 			}); err != nil {
@@ -275,9 +261,6 @@ func (k *Kontroller) Run(ctx context.Context, manageAgent bool) error {
 
 		glog.Infof("Found %d nodes that need a reboot", len(chosenNodes))
 		for _, node := range chosenNodes {
-			if leaderErr := stillLeader(); leaderErr != nil {
-				return leaderErr
-			}
 			k.markNodeRebootable(node)
 		}
 
