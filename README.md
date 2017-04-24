@@ -25,7 +25,7 @@ Currently, `update-operator` only reboots one node at a time.
 
 ## Requirements
 
-- Working Kubernetes >= 1.4 on CoreOS
+- Working Kubernetes >= 1.6 on CoreOS
 - `update-engine.service` should be unmasked, enabled and started in systemd
 - `locksmithd.service` should be masked and stopped in systemd
 
