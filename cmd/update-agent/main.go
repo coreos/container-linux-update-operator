@@ -2,16 +2,19 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 
 	"github.com/coreos/pkg/flagutil"
 	"github.com/golang/glog"
 
 	"github.com/coreos/container-linux-update-operator/pkg/agent"
+	"github.com/coreos/container-linux-update-operator/pkg/version"
 )
 
 var (
-	node = flag.String("node", "", "Kubernetes node name")
+	node         = flag.String("node", "", "Kubernetes node name")
+	printVersion = flag.Bool("version", false, "Print version and exit")
 )
 
 func main() {
@@ -20,6 +23,11 @@ func main() {
 
 	if err := flagutil.SetFlagsFromEnv(flag.CommandLine, "UPDATE_AGENT"); err != nil {
 		glog.Fatalf("Failed to parse environment variables: %v", err)
+	}
+
+	if *printVersion {
+		fmt.Println(version.Format())
+		os.Exit(0)
 	}
 
 	if *node == "" {
