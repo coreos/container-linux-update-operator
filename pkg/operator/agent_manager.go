@@ -79,7 +79,6 @@ func (k *Kontroller) runDaemonsetUpdate(agentImageRepo string) error {
 		err := k.kc.DaemonSets(k.namespace).Delete(agentDS.Name, &v1meta.DeleteOptions{
 			OrphanDependents: &falseVal, // Cascading delete
 		})
-		// TODO: this requires delete to be blocking to work. Is it?
 		if err != nil {
 			glog.Errorf("could not delete old daemonset %+v: %v", agentDS, err)
 			return err
