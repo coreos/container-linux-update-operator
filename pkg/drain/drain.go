@@ -3,13 +3,14 @@ package drain
 import (
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/api/errors"
+	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/errors"
 	v1api "k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/pkg/fields"
-	"k8s.io/client-go/pkg/kubelet/types"
-	"k8s.io/client-go/pkg/runtime"
+	kubelettypes "k8s.io/kubernetes/pkg/kubelet/types"
 )
 
 // GetPodsForDeletion finds pods on the given node that are candidates for
@@ -18,7 +19,7 @@ import (
 // https://github.com/kubernetes/kubernetes/blob/v1.5.4/pkg/kubectl/cmd/drain.go#L234-L245
 // See DrainOptions.getPodsForDeletion and callees.
 func GetPodsForDeletion(kc *kubernetes.Clientset, node string) (pods []v1api.Pod, err error) {
-	podList, err := kc.Core().Pods(v1api.NamespaceAll).List(v1api.ListOptions{
+	podList, err := kc.Core().Pods(v1api.NamespaceAll).List(v1meta.ListOptions{
 		FieldSelector: fields.SelectorFromSet(fields.Set{"spec.nodeName": node}).String(),
 	})
 	if err != nil {
@@ -27,7 +28,7 @@ func GetPodsForDeletion(kc *kubernetes.Clientset, node string) (pods []v1api.Pod
 
 	for _, pod := range podList.Items {
 		// skip mirror pods
-		if _, ok := pod.Annotations[types.ConfigMirrorAnnotationKey]; ok {
+		if _, ok := pod.Annotations[kubelettypes.ConfigMirrorAnnotationKey]; ok {
 			continue
 		}
 
@@ -69,7 +70,7 @@ func GetPodsForDeletion(kc *kubernetes.Clientset, node string) (pods []v1api.Pod
 func getDaemonsetController(kc *kubernetes.Clientset, sr *api.SerializedReference) (interface{}, error) {
 	switch sr.Reference.Kind {
 	case "DaemonSet":
-		return kc.DaemonSets(sr.Reference.Namespace).Get(sr.Reference.Name)
+		return kc.DaemonSets(sr.Reference.Namespace).Get(sr.Reference.Name, v1meta.GetOptions{})
 	}
 	return nil, fmt.Errorf("unknown controller kind %q", sr.Reference.Kind)
 }

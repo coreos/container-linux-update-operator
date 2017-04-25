@@ -7,21 +7,21 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	v1core "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/pkg/api"
 	v1api "k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/pkg/fields"
-	"k8s.io/client-go/pkg/util/flowcontrol"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/flowcontrol"
 
 	// These should be replaced with client-go equivilents when available
 	kapi "k8s.io/kubernetes/pkg/api"
-	kinternalclientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
-	kv1core "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/internalversion"
+	"k8s.io/kubernetes/pkg/client/clientset_generated/clientset"
 	kleaderelection "k8s.io/kubernetes/pkg/client/leaderelection"
 	kresourcelock "k8s.io/kubernetes/pkg/client/leaderelection/resourcelock"
-	krecord "k8s.io/kubernetes/pkg/client/record"
-	krest "k8s.io/kubernetes/pkg/client/restclient"
 
 	"github.com/coreos/container-linux-update-operator/pkg/constants"
 	"github.com/coreos/container-linux-update-operator/pkg/k8sutil"
@@ -31,7 +31,10 @@ const (
 	eventReasonRebootFailed            = "RebootFailed"
 	eventSourceComponent               = "update-operator"
 	leaderElectionEventSourceComponent = "update-operator-leader-election"
-	maxRebootingNodes                  = 1
+	// agentDefaultAppName is the label value for the 'app' key that agents are
+	// expected to be labeled with.
+	agentDefaultAppName = "container-linux-update-agent"
+	maxRebootingNodes   = 1
 
 	leaderElectionResourceName = "container-linux-update-operator-lock"
 
@@ -75,8 +78,12 @@ type Kontroller struct {
 	nc v1core.NodeInterface
 	er record.EventRecorder
 
-	leaderElectionClient        kinternalclientset.Interface
-	leaderElectionEventRecorder krecord.EventRecorder
+	leaderElectionClient        clientset.Interface
+	leaderElectionEventRecorder record.EventRecorder
+	// namespace is the kubernetes namespace any resources (e.g. locks,
+	// configmaps, agents) should be created and read under.
+	// It will be set to the namespace the operator is running in automatically.
+	namespace string
 }
 
 func New() (*Kontroller, error) {
@@ -92,44 +99,43 @@ func New() (*Kontroller, error) {
 	// create event emitter
 	broadcaster := record.NewBroadcaster()
 	broadcaster.StartRecordingToSink(&v1core.EventSinkImpl{Interface: kc.Events("")})
-	er := broadcaster.NewRecorder(v1api.EventSource{Component: eventSourceComponent})
+	er := broadcaster.NewRecorder(api.Scheme, v1api.EventSource{Component: eventSourceComponent})
 
-	leaderElectionClientConfig, err := krest.InClusterConfig()
+	leaderElectionClientConfig, err := rest.InClusterConfig()
 	if err != nil {
 		return nil, fmt.Errorf("error creating leader election client config: %v", err)
 	}
-	leaderElectionClient, err := kinternalclientset.NewForConfig(leaderElectionClientConfig)
+	leaderElectionClient, err := clientset.NewForConfig(leaderElectionClientConfig)
 	if err != nil {
 		return nil, fmt.Errorf("error creating leader election client: %v", err)
 	}
 
-	leaderElectionBroadcaster := krecord.NewBroadcaster()
-	leaderElectionBroadcaster.StartRecordingToSink(&kv1core.EventSinkImpl{
-		Interface: leaderElectionClient.Events(""),
+	leaderElectionBroadcaster := record.NewBroadcaster()
+	leaderElectionBroadcaster.StartRecordingToSink(&v1core.EventSinkImpl{
+		Interface: v1core.New(leaderElectionClient.Core().RESTClient()).Events(""),
 	})
-	leaderElectionEventRecorder := leaderElectionBroadcaster.NewRecorder(kapi.EventSource{
+	leaderElectionEventRecorder := leaderElectionBroadcaster.NewRecorder(kapi.Scheme, v1api.EventSource{
 		Component: leaderElectionEventSourceComponent,
 	})
 
-	return &Kontroller{kc, nc, er, leaderElectionClient, leaderElectionEventRecorder}, nil
+	namespace := os.Getenv("POD_NAMESPACE")
+	if namespace == "" {
+		return nil, fmt.Errorf("unable to determine operator namespace: please ensure POD_NAMESPACE environment variable is set")
+	}
+
+	return &Kontroller{kc, nc, er, leaderElectionClient, leaderElectionEventRecorder, namespace}, nil
 }
 
 // withLeaderElection creates a new context which is cancelled when this
 // operator does not hold a lock to operate on the cluster
-func (k *Kontroller) withLeaderElection(ctx context.Context) (context.Context, error) {
-
-	lockNamespace := os.Getenv("POD_NAMESPACE")
-	if lockNamespace == "" {
-		lockNamespace = "kube-system"
-	}
-
+func (k *Kontroller) withLeaderElection() error {
 	// TODO: a better id might be necessary.
 	// Currently, KVO uses env.POD_NAME and the upstream controller-manager uses this.
 	// Both end up having the same value in general, but Hostname is
 	// more likely to have a value.
 	id, err := os.Hostname()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// TODO(euank): this should not use an endpoint due to performance reasons.
@@ -139,8 +145,8 @@ func (k *Kontroller) withLeaderElection(ctx context.Context) (context.Context, e
 	// Once https://github.com/kubernetes/kubernetes/pull/42666 is merged, update
 	// to use that. There will be version-cross-compatibility-dragons.
 	resLock := &kresourcelock.EndpointsLock{
-		EndpointsMeta: kapi.ObjectMeta{
-			Namespace: lockNamespace,
+		EndpointsMeta: v1meta.ObjectMeta{
+			Namespace: k.namespace,
 			Name:      leaderElectionResourceName,
 		},
 		Client: k.leaderElectionClient,
@@ -150,9 +156,8 @@ func (k *Kontroller) withLeaderElection(ctx context.Context) (context.Context, e
 		},
 	}
 
-	newCtx, cancelFunc := context.WithCancel(ctx)
 	waitLeading := make(chan struct{})
-	go func(ctx context.Context, waitLeading chan<- struct{}) {
+	go func(waitLeading chan<- struct{}) {
 		// Lease values inspired by a combination of
 		// https://github.com/kubernetes/kubernetes/blob/f7c07a121d2afadde7aa15b12a9d02858b30a0a9/pkg/apis/componentconfig/v1alpha1/defaults.go#L163-L174
 		// and the KVO values
@@ -169,40 +174,40 @@ func (k *Kontroller) withLeaderElection(ctx context.Context) (context.Context, e
 					waitLeading <- struct{}{}
 				},
 				OnStoppedLeading: func() {
-					glog.V(5).Info("stopped leading; calling cancel")
-					cancelFunc()
+					glog.Fatalf("leaderelection lost")
 				},
 			},
 		})
-	}(ctx, waitLeading)
+	}(waitLeading)
 
 	<-waitLeading
-	return newCtx, nil
+	return nil
 }
 
-func (k *Kontroller) Run(ctx context.Context) error {
-	ctx, err := k.withLeaderElection(ctx)
+func (k *Kontroller) Run(ctx context.Context, manageAgent bool, agentImageRepo string) error {
+	err := k.withLeaderElection()
 	if err != nil {
 		return err
 	}
 	glog.V(5).Info("Starting run loop")
 
-	// Check leadership before each api write
-	stillLeader := func() error {
-		select {
-		case <-ctx.Done():
-			return fmt.Errorf("No longer leader: bailing out: %v", ctx.Err())
-		default:
-			return nil
+	rl := flowcontrol.NewTokenBucketRateLimiter(0.2, 1)
+
+	// Before doing anytihng else, make sure the associated agent daemonset is
+	// ready if it's our responsibility.
+	if manageAgent {
+		err := k.runDaemonsetUpdate(agentImageRepo)
+		if err != nil {
+			glog.Errorf("unable to ensure managed agents are ready: %v", err)
+			return err
 		}
 	}
 
-	rl := flowcontrol.NewTokenBucketRateLimiter(0.2, 1)
 	for {
 		rl.Accept()
 		glog.V(4).Info("Going through a loop cycle")
 
-		nodelist, err := k.nc.List(v1api.ListOptions{})
+		nodelist, err := k.nc.List(v1meta.ListOptions{})
 		if err != nil {
 			glog.Infof("Failed listing nodes %v", err)
 			continue
@@ -218,9 +223,6 @@ func (k *Kontroller) Run(ctx context.Context) error {
 
 		for _, n := range justRebootedNodes {
 			glog.V(5).Infof("Setting 'ok-to-reboot=false' for %v", n.Name)
-			if leaderErr := stillLeader(); leaderErr != nil {
-				return leaderErr
-			}
 			if err := k8sutil.SetNodeAnnotations(k.nc, n.Name, map[string]string{
 				constants.AnnotationOkToReboot: constants.False,
 			}); err != nil {
@@ -228,7 +230,7 @@ func (k *Kontroller) Run(ctx context.Context) error {
 			}
 		}
 
-		nodelist, err = k.nc.List(v1api.ListOptions{})
+		nodelist, err = k.nc.List(v1meta.ListOptions{})
 		if err != nil {
 			glog.Infof("Failed listing nodes: %v", err)
 			continue
@@ -256,9 +258,6 @@ func (k *Kontroller) Run(ctx context.Context) error {
 
 		glog.Infof("Found %d nodes that need a reboot", len(chosenNodes))
 		for _, node := range chosenNodes {
-			if leaderErr := stillLeader(); leaderErr != nil {
-				return leaderErr
-			}
 			k.markNodeRebootable(node)
 		}
 
