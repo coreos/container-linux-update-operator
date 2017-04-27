@@ -1,0 +1,40 @@
+#!/bin/bash
+
+set -ex
+set -o nounset
+set -o pipefail
+
+if [[ "$#" != "1" ]]; then
+	echo "Must have one argument; the version (e.g. v1.2.3)"
+	exit 255
+fi
+
+# This script creates the necessary commits for a release of the associated
+# image.
+# It specifically does not push the resultant image so that the script may be
+# run on a developer's machine to create the tag, and then the tag may be built
+# from CI or an otherwise clean environment.
+
+if ! [[ "$0" =~ "build/bump-release" ]]; then
+	echo "This script must be run in the toplevel directory"
+	exit 255
+fi
+
+if ! [[ "$1" =~ ^v[[:digit:]]+.[[:digit:]]+.[[:digit:]]$ ]]; then
+	echo "Usage: build/bump-release <VERSION>"
+	echo "   where VERSION must be vX.Y.Z"
+	exit 255
+fi
+
+VERSION=${1:1} # remove 'v', x.y.z
+NEXT_VERSION=$(echo "${VERSION}" | awk -F. '{print $1"."$2+1".0"}') #x.y.z
+
+echo "${VERSION}" > VERSION
+git add VERSION
+git commit -m "version: bump to v${VERSION}"
+git tag --sign "v${VERSION}" -m "v${VERSION}"
+
+# Put a minor version bump in for the 'dev' version
+echo "${NEXT_VERSION}-dev" > VERSION
+git add VERSION
+git commit -m "version: begin development on v${NEXT_VERSION}"
