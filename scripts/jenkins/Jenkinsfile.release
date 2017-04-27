@@ -1,0 +1,45 @@
+#!groovy
+
+properties([
+    buildDiscarder(logRotator(daysToKeepStr: '30', numToKeepStr: '50')),
+
+    parameters([
+        string(name: 'TAG',
+               defaultValue: 'v0.0.0',
+               description: 'CLUO tag to release'),
+    ])
+])
+
+
+node('docker') {
+    cleanWs()
+
+    stage('scm') {
+        checkout scm: [
+            $class: 'GitSCM',
+            branches: [[name: params.TAG]],
+            extensions: [[$class: 'RelativeTargetDirectory',
+            relativeTargetDir: 'container-linux-update-operator'],
+            [$class: 'CleanBeforeCheckout']],
+            userRemoteConfigs: [[url: "https://github.com/coreos/container-linux-update-operator.git", name: 'origin']]
+        ]
+    }
+
+    stage('build') {
+        withCredentials([usernamePassword(credentialsId: 'quay-update-operator', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER')]) {
+            withEnv(["TAG=${params.TAG}"]) {
+                sh '''#!/bin/bash -ex
+                    # isolate the docker credentials to the workspace for easy cleanup
+                    export HOME="${WORKSPACE}"
+                    docker login --username "$DOCKER_USER" --password "$DOCKER_PASS" quay.io
+
+                    cd container-linux-update-operator
+
+                    VERSION=${TAG} \
+                        PUSH_IMAGE=true \
+                        ./build/build-image.sh
+                '''
+            }
+        }
+    }
+}
