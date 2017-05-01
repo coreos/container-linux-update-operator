@@ -220,7 +220,7 @@ func agentDaemonsetSpec(repo string) *v1beta1.DaemonSet {
 }
 
 func agentImageName(repo string) string {
-	return fmt.Sprintf("%s:%s", repo, version.Version)
+	return fmt.Sprintf("%s:v%s", repo, version.Version)
 }
 
 func agentCommand() []string {
