@@ -12,7 +12,7 @@ spec:
     spec:
       containers:
       - name: update-operator
-        image: quay.io/coreos/container-linux-update-operator:${TAG}
+        image: quay.io/coreos/container-linux-update-operator:latest
         command:
         - "/bin/update-operator"
         env:
