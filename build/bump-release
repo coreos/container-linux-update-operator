@@ -26,11 +26,14 @@ if ! [[ "$1" =~ ^v[[:digit:]]+.[[:digit:]]+.[[:digit:]]$ ]]; then
 	exit 255
 fi
 
-VERSION=${1:1} # remove 'v', x.y.z
+export VERSION=${1:1} # remove 'v', x.y.z
 NEXT_VERSION=$(echo "${VERSION}" | awk -F. '{print $1"."$2+1".0"}') #x.y.z
 
 echo "${VERSION}" > VERSION
 git add VERSION
+envsubst '${VERSION}' < examples/update-operator.yaml.tmpl > examples/update-operator.yaml
+git add examples/update-operator.yaml
+
 git commit -m "version: bump to v${VERSION}"
 git tag --sign "v${VERSION}" -m "v${VERSION}"
 
