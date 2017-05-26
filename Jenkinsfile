@@ -1,3 +1,22 @@
+#!groovy
+
+properties([
+    buildDiscarder(logRotator(daysToKeepStr: '20', numToKeepStr: '30')),
+
+    [$class: 'GithubProjectProperty',
+     projectUrlStr: 'https://github.com/coreos/container-linux-update-operator'],
+
+    pipelineTriggers([
+      // Pull requests, with whitelisting/auth
+      [$class: 'GhprbTrigger',
+       cron: '*/1 * * * *',
+       permitAll: false,
+       orgWhitelist(['coreos', 'coreos-inc']),
+       displayBuildErrorsOnDownstreamBuilds: true,
+       gitHubAuthId: 'dd528eca-0dbc-4c17-a4c6-8e8a2ba7f43d'],
+    ])
+])
+
 node('docker') {
   stage('SCM') {
     checkout scm
