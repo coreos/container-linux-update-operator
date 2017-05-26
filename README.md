@@ -47,4 +47,4 @@ behalf. It also uses the `latest` image tag, which you can swap if necessary.
 
 ## Test
 
-To test that it is working, you can simulate that a reboot is needed by sshing to the node and running `locksmithctl send-need-reboot`.
+To test that it is working, you can SSH to a node and trigger an update check by running `update_engine_client -check_for_update` or simulate a reboot is needed by running `locksmithctl send-need-reboot`.
