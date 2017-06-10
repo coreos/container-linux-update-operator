@@ -145,9 +145,14 @@ func (k *Klocksmith) Run() error {
 	go k.watchUpdateStatus(k.updateStatusCallback)
 
 	// block until constants.AnnotationOkToReboot is set
-	glog.Infof("Waiting for ok-to-reboot from controller...")
-	if err := k.waitForOkToReboot(); err != nil {
-		return err
+	for {
+		glog.Infof("Waiting for ok-to-reboot from controller...")
+		err := k.waitForOkToReboot()
+		if err == nil {
+			// time to reboot
+			break
+		}
+		glog.Warningf("error waiting for an ok-to-reboot: %v", err)
 	}
 
 	// set constants.AnnotationRebootInProgress and drain self
