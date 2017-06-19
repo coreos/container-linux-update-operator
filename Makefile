@@ -1,16 +1,18 @@
-.PHONY:	all bin precompile image clean test vendor
+.PHONY:	all bin image clean test vendor
+export CGO_ENABLED:=0
 
-all:	bin
+VERSION=$(shell cat VERSION)
+COMMIT=$(shell git rev-parse HEAD)
 
-bin:	bin/update-agent bin/update-operator
+REPO=github.com/coreos/container-linux-update-operator
+LD_FLAGS="-w -X $(REPO)/pkg/version.Version=$(VERSION) -X $(REPO)/pkg/version.Commit=$(COMMIT)"
+
+all: bin
+
+bin: bin/update-agent bin/update-operator
 
 bin/%:
-	CGO_ENABLED=0 go build \
-							-ldflags '-s -w -X github.com/coreos/container-linux-update-operator/pkg/version.Version=$(shell cat VERSION) -X github.com/coreos/container-linux-update-operator/pkg/version.Commit=$(shell git rev-parse HEAD)' \
-							-tags netgo -o $@ ./cmd/$*
-
-precompile:
-	CGO_ENABLED=0 go test -i -tags netgo ./cmd/...
+	go build -o $@ -ldflags $(LD_FLAGS) $(REPO)/cmd/$*
 
 image:
 	./build/build-image.sh
@@ -19,9 +21,7 @@ clean:
 	rm -rf bin
 
 test:
-	CGO_ENABLED=0 go test -tags netgo -v ./pkg/...
+	go test -v $(REPO)/pkg/...
 
 vendor:
 	glide update --strip-vendor
-
-integration-test:
