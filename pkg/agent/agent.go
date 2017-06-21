@@ -191,7 +191,8 @@ func (k *Klocksmith) Run() error {
 	for _, pod := range pods {
 		glog.Infof("Terminating pod %q...", pod.Name)
 		if err := k.kc.Pods(pod.Namespace).Delete(pod.Name, deleteOptions); err != nil {
-			return fmt.Errorf("failed terminating pod %q: %v", pod.Name, err)
+			glog.Errorf("failed terminating pod %q: $v", pod.Name, err)
+			// Continue anyways, the reboot should terminate it
 		}
 	}
 
