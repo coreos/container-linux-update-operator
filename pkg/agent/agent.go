@@ -145,9 +145,14 @@ func (k *Klocksmith) Run() error {
 	go k.watchUpdateStatus(k.updateStatusCallback)
 
 	// block until constants.AnnotationOkToReboot is set
-	glog.Infof("Waiting for ok-to-reboot from controller...")
-	if err := k.waitForOkToReboot(); err != nil {
-		return err
+	for {
+		glog.Infof("Waiting for ok-to-reboot from controller...")
+		err := k.waitForOkToReboot()
+		if err == nil {
+			// time to reboot
+			break
+		}
+		glog.Warningf("error waiting for an ok-to-reboot: %v", err)
 	}
 
 	// set constants.AnnotationRebootInProgress and drain self
@@ -186,7 +191,8 @@ func (k *Klocksmith) Run() error {
 	for _, pod := range pods {
 		glog.Infof("Terminating pod %q...", pod.Name)
 		if err := k.kc.Pods(pod.Namespace).Delete(pod.Name, deleteOptions); err != nil {
-			return fmt.Errorf("failed terminating pod %q: %v", pod.Name, err)
+			glog.Errorf("failed terminating pod %q: $v", pod.Name, err)
+			// Continue anyways, the reboot should terminate it
 		}
 	}
 
