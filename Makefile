@@ -1,27 +1,34 @@
-.PHONY:	all bin image clean test vendor
+.PHONY:	all release-bin image clean test vendor
 export CGO_ENABLED:=0
 
-VERSION=$(shell cat VERSION)
+VERSION=$(shell ./build/git-version.sh)
+RELEASE_VERSION=$(shell cat VERSION)
 COMMIT=$(shell git rev-parse HEAD)
 
 REPO=github.com/coreos/container-linux-update-operator
-LD_FLAGS="-w -X $(REPO)/pkg/version.Version=$(VERSION) -X $(REPO)/pkg/version.Commit=$(COMMIT)"
+LD_FLAGS="-w -X $(REPO)/pkg/version.Version=$(RELEASE_VERSION) -X $(REPO)/pkg/version.Commit=$(COMMIT)"
 
-all: bin
+IMAGE_REPO=quay.io/coreos/container-linux-update-operator
 
-bin: bin/update-agent bin/update-operator
+all: bin/update-agent bin/update-operator
 
 bin/%:
 	go build -o $@ -ldflags $(LD_FLAGS) $(REPO)/cmd/$*
 
-image:
-	./build/build-image.sh
-
-clean:
-	rm -rf bin
+release-bin:
+	./build/build-release.sh
 
 test:
 	go test -v $(REPO)/pkg/...
 
+image: release-bin
+	@sudo docker build --rm=true -t $(IMAGE_REPO):$(VERSION) .
+
+docker-push: image
+	@sudo docker push $(IMAGE_REPO):$(VERSION)
+
 vendor:
 	glide update --strip-vendor
+
+clean:
+	rm -rf bin
