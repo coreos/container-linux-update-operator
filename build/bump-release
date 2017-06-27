@@ -32,7 +32,9 @@ NEXT_VERSION=$(echo "${VERSION}" | awk -F. '{print $1"."$2+1".0"}') #x.y.z
 echo "${VERSION}" > VERSION
 git add VERSION
 envsubst '${VERSION}' < examples/update-operator.yaml.tmpl > examples/update-operator.yaml
+envsubst '${VERSION}' < examples/update-agent.yaml.tmpl > examples/update-agent.yaml
 git add examples/update-operator.yaml
+git add examples/update-agent.yaml
 
 git commit -m "version: bump to v${VERSION}"
 git tag --sign "v${VERSION}" -m "v${VERSION}"

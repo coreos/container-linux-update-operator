@@ -36,14 +36,12 @@ To start/stop a service, run `systemctl start <name>` or `systemctl stop <name>`
 
 ## Usage
 
-To start the `update-operator` Deployment, run:
+Create the `update-operator` deployment and `update-agent` daemonset.
 
 ```
 kubectl create -f examples/update-operator.yaml
+kubectl create -f example/update-agent.yaml
 ```
-
-By default, the `update-operator` will manage the `update-agent` DaemonSet on your
-behalf. It also uses the `latest` image tag, which you can swap if necessary.
 
 ## Test
 
