@@ -46,6 +46,8 @@ func New(unit string) (*Hook, error) {
 
 	h.object = h.conn.Object(dest, dbus.ObjectPath(opath))
 
+	// TODO(sdemos): might be useful to check existance of the unit here
+
 	return h, nil
 }
 

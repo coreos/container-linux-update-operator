@@ -17,6 +17,7 @@ import (
 
 	"github.com/coreos/container-linux-update-operator/pkg/constants"
 	"github.com/coreos/container-linux-update-operator/pkg/drain"
+	"github.com/coreos/container-linux-update-operator/pkg/hook"
 	"github.com/coreos/container-linux-update-operator/pkg/k8sutil"
 	"github.com/coreos/container-linux-update-operator/pkg/updateengine"
 )
@@ -27,6 +28,7 @@ type Klocksmith struct {
 	nc   v1core.NodeInterface
 	ue   *updateengine.Client
 	lc   *login1.Conn
+	hook *hook.Hook
 }
 
 var (
@@ -58,7 +60,12 @@ func New(node string) (*Klocksmith, error) {
 		return nil, fmt.Errorf("error establishing connection to logind dbus: %v", err)
 	}
 
-	return &Klocksmith{node, kc, nc, ue, lc}, nil
+	h, err := hook.New("cluo-pre-reboot-hook.target") // TODO(sdemos): this should be configurable
+	if err != nil {
+		return nil, fmt.Errorf("error establishing connection to systemd dbus: %v", err)
+	}
+
+	return &Klocksmith{node, kc, nc, ue, lc, h}, nil
 }
 
 // updateStatusCallback receives Status messages from update engine. If the
@@ -153,6 +160,12 @@ func (k *Klocksmith) Run() error {
 			break
 		}
 		glog.Warningf("error waiting for an ok-to-reboot: %v", err)
+	}
+
+	// call the pre-reboot hook target
+	glog.Info("Calling pre-reboot target")
+	if err := k.hook.CompleteUnit(); err != nil {
+		return err
 	}
 
 	// set constants.AnnotationRebootInProgress and drain self
