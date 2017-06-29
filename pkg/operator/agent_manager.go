@@ -14,6 +14,8 @@ import (
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 )
 
+type AgentTolerations []string
+
 var (
 	managedByOperatorLabels = map[string]string{
 		"managed-by": "container-linux-update-operator",
@@ -30,7 +32,7 @@ var (
 // agent version.
 // Furthermore, it's assumed that all future agent versions will be backwards
 // compatible, so if the agent's version is greater than ours, it's okay.
-func (k *Kontroller) runDaemonsetUpdate(agentImageRepo string) error {
+func (k *Kontroller) runDaemonsetUpdate(agentImageRepo string, agentTolerations AgentTolerations) error {
 	agentDaemonsets, err := k.kc.DaemonSets(k.namespace).List(v1meta.ListOptions{
 		LabelSelector: labels.SelectorFromSet(labels.Set(managedByOperatorLabels)).String(),
 	})
@@ -40,7 +42,7 @@ func (k *Kontroller) runDaemonsetUpdate(agentImageRepo string) error {
 
 	if len(agentDaemonsets.Items) == 0 {
 		// No daemonset, create it
-		runErr := k.createAgentDamonset(agentImageRepo)
+		runErr := k.createAgentDamonset(agentImageRepo, agentTolerations)
 		if runErr != nil {
 			return runErr
 		}
@@ -84,7 +86,7 @@ func (k *Kontroller) runDaemonsetUpdate(agentImageRepo string) error {
 			return err
 		}
 
-		err = k.createAgentDamonset(agentImageRepo)
+		err = k.createAgentDamonset(agentImageRepo, agentTolerations)
 		if err != nil {
 			glog.Errorf("could not create new daemonset: %v", err)
 			return err
@@ -94,12 +96,12 @@ func (k *Kontroller) runDaemonsetUpdate(agentImageRepo string) error {
 	return nil
 }
 
-func (k *Kontroller) createAgentDamonset(agentImageRepo string) error {
-	_, err := k.kc.DaemonSets(k.namespace).Create(agentDaemonsetSpec(agentImageRepo))
+func (k *Kontroller) createAgentDamonset(agentImageRepo string, agentTolerations AgentTolerations) error {
+	_, err := k.kc.DaemonSets(k.namespace).Create(agentDaemonsetSpec(agentImageRepo, agentTolerations))
 	return err
 }
 
-func agentDaemonsetSpec(repo string) *v1beta1.DaemonSet {
+func agentDaemonsetSpec(repo string, agentTolerations AgentTolerations) *v1beta1.DaemonSet {
 	// Each agent daemonset includes the version of the agent in the selector.
 	// This ensures that the 'orphan adoption' logic doesn't kick in for these
 	// daemonsets.
@@ -109,7 +111,7 @@ func agentDaemonsetSpec(repo string) *v1beta1.DaemonSet {
 	}
 	versionedSelector[constants.AgentVersion] = version.Version
 
-	return &v1beta1.DaemonSet{
+	daemonSet := &v1beta1.DaemonSet{
 		ObjectMeta: v1meta.ObjectMeta{
 			Name:   daemonsetName,
 			Labels: managedByOperatorLabels,
@@ -129,13 +131,7 @@ func agentDaemonsetSpec(repo string) *v1beta1.DaemonSet {
 				},
 				Spec: v1.PodSpec{
 					// Update the master nodes too
-					Tolerations: []v1.Toleration{
-						{
-							Key:      "node-role.kubernetes.io/master",
-							Operator: v1.TolerationOpExists,
-							Effect:   v1.TaintEffectNoSchedule,
-						},
-					},
+					Tolerations: []v1.Toleration{agentToleration("node-role.kubernetes.io/master")},
 					Containers: []v1.Container{
 						{
 							Name:    "update-agent",
@@ -217,6 +213,15 @@ func agentDaemonsetSpec(repo string) *v1beta1.DaemonSet {
 			},
 		},
 	}
+
+	// Add in any additional tolerations
+	dstst := &daemonSet.Spec.Template.Spec.Tolerations
+	for _, toleration := range agentTolerations {
+		glog.V(5).Infof("Adding toleration: %s", toleration)
+		*dstst = append(*dstst, agentToleration(toleration))
+	}
+
+	return daemonSet
 }
 
 func agentImageName(repo string) string {
@@ -225,4 +230,12 @@ func agentImageName(repo string) string {
 
 func agentCommand() []string {
 	return []string{"/bin/update-agent"}
+}
+
+func agentToleration(toleration string) v1.Toleration {
+	return v1.Toleration{
+		Key:      toleration,
+		Operator: v1.TolerationOpExists,
+		Effect:   v1.TaintEffectNoSchedule,
+	}
 }

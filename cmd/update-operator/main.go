@@ -15,6 +15,7 @@ import (
 )
 
 var (
+	agentTolerations flagutil.StringSliceFlag
 	analyticsEnabled = flag.Bool("analytics", true, "Send analytics to Google Analytics")
 	manageAgent      = flag.Bool("manage-agent", true, "Manage the associated update-agent")
 	agentImageRepo   = flag.String("agent-image-repo", "quay.io/coreos/container-linux-update-operator", "The image to use for the managed agent, without version tag")
@@ -23,6 +24,7 @@ var (
 
 func main() {
 	flag.Set("logtostderr", "true")
+	flag.Var(&agentTolerations, "tolerations", "Comma separated list of additional tolerations for generated agent DaemonSet spec")
 	flag.Parse()
 
 	if err := flagutil.SetFlagsFromEnv(flag.CommandLine, "UPDATE_OPERATOR"); err != nil {
@@ -47,7 +49,7 @@ func main() {
 
 	analytics.ControllerStarted()
 
-	if err := o.Run(context.Background(), *manageAgent, *agentImageRepo); err != nil {
+	if err := o.Run(context.Background(), *manageAgent, *agentImageRepo, operator.AgentTolerations(agentTolerations)); err != nil {
 		glog.Fatalf("Error while running %s: %v", os.Args[0], err)
 	}
 }

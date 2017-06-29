@@ -184,7 +184,7 @@ func (k *Kontroller) withLeaderElection() error {
 	return nil
 }
 
-func (k *Kontroller) Run(ctx context.Context, manageAgent bool, agentImageRepo string) error {
+func (k *Kontroller) Run(ctx context.Context, manageAgent bool, agentImageRepo string, agentTolerations AgentTolerations) error {
 	err := k.withLeaderElection()
 	if err != nil {
 		return err
@@ -196,7 +196,7 @@ func (k *Kontroller) Run(ctx context.Context, manageAgent bool, agentImageRepo s
 	// Before doing anytihng else, make sure the associated agent daemonset is
 	// ready if it's our responsibility.
 	if manageAgent {
-		err := k.runDaemonsetUpdate(agentImageRepo)
+		err := k.runDaemonsetUpdate(agentImageRepo, agentTolerations)
 		if err != nil {
 			glog.Errorf("unable to ensure managed agents are ready: %v", err)
 			return err
