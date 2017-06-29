@@ -15,9 +15,10 @@ import (
 
 var (
 	analyticsEnabled = flag.Bool("analytics", true, "Send analytics to Google Analytics")
-	manageAgent      = flag.Bool("manage-agent", true, "Manage the associated update-agent")
-	agentImageRepo   = flag.String("agent-image-repo", "quay.io/coreos/container-linux-update-operator", "The image to use for the managed agent, without version tag")
 	printVersion     = flag.Bool("version", false, "Print version and exit")
+	// deprecated
+	manageAgent    = flag.Bool("manage-agent", false, "Manage the associated update-agent")
+	agentImageRepo = flag.String("agent-image-repo", "quay.io/coreos/container-linux-update-operator", "The image to use for the managed agent, without version tag")
 )
 
 func main() {
@@ -37,6 +38,10 @@ func main() {
 		analytics.Enable()
 	}
 
+	if *manageAgent {
+		glog.Warning("Use of -manage-agent=true is deprecated and will be removed in the future")
+	}
+
 	o, err := operator.New(operator.Config{
 		ManageAgent:    *manageAgent,
 		AgentImageRepo: *agentImageRepo,
@@ -54,6 +59,6 @@ func main() {
 	defer close(stop)
 
 	if err := o.Run(stop); err != nil {
-		glog.Fatalf("error while running %s: %v", os.Args[0], err)
+		glog.Fatalf("Error while running %s: %v", os.Args[0], err)
 	}
 }
