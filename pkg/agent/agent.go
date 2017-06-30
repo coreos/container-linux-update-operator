@@ -38,7 +38,7 @@ var (
 	}).AsSelector()
 )
 
-func New(node string) (*Klocksmith, error) {
+func New(node string, unit string) (*Klocksmith, error) {
 	// set up kubernetes in-cluster client
 	kc, err := k8sutil.InClusterClient()
 	if err != nil {
@@ -60,9 +60,12 @@ func New(node string) (*Klocksmith, error) {
 		return nil, fmt.Errorf("error establishing connection to logind dbus: %v", err)
 	}
 
-	h, err := hook.New("cluo-pre-reboot-hook.target") // TODO(sdemos): this should be configurable
-	if err != nil {
-		return nil, fmt.Errorf("error establishing connection to systemd dbus: %v", err)
+	var h *hook.Hook
+	if unit != "" {
+		h, err = hook.New(unit)
+		if err != nil {
+			return nil, fmt.Errorf("error establishing connection to systemd dbus: %v", err)
+		}
 	}
 
 	return &Klocksmith{node, kc, nc, ue, lc, h}, nil
@@ -163,9 +166,11 @@ func (k *Klocksmith) Run() error {
 	}
 
 	// call the pre-reboot hook target
-	glog.Info("Calling pre-reboot target")
-	if err := k.hook.CompleteUnit(); err != nil {
-		return err
+	if k.hook != nil {
+		glog.Info("Calling pre-reboot hook unit")
+		if err := k.hook.CompleteUnit(); err != nil {
+			return err
+		}
 	}
 
 	// set constants.AnnotationRebootInProgress and drain self

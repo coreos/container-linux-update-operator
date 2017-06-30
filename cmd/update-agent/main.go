@@ -14,6 +14,7 @@ import (
 
 var (
 	node         = flag.String("node", "", "Kubernetes node name")
+	unit         = flag.String("unit", "", "systemd unit file to complete before reboot")
 	printVersion = flag.Bool("version", false, "Print version and exit")
 )
 
@@ -34,7 +35,7 @@ func main() {
 		glog.Fatal("-node is required")
 	}
 
-	a, err := agent.New(*node)
+	a, err := agent.New(*node, *unit)
 	if err != nil {
 		glog.Fatalf("Failed to initialize %s: %v", os.Args[0], err)
 	}
