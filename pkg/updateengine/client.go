@@ -23,12 +23,11 @@ import (
 )
 
 const (
-	dbusPath                      = "/com/coreos/update1"
-	dbusInterface                 = "com.coreos.update1.Manager"
-	dbusMember                    = "StatusUpdate"
-	dbusMemberInterface           = dbusInterface + "." + dbusMember
-	signalBuffer                  = 32 // TODO(bp): What is a reasonable value here?
-	UpdateStatusUpdatedNeedReboot = "UPDATE_STATUS_UPDATED_NEED_REBOOT"
+	dbusPath            = "/com/coreos/update1"
+	dbusInterface       = "com.coreos.update1.Manager"
+	dbusMember          = "StatusUpdate"
+	dbusMemberInterface = dbusInterface + "." + dbusMember
+	signalBuffer        = 32 // TODO(bp): What is a reasonable value here?
 )
 
 type Client struct {
@@ -74,6 +73,13 @@ func New() (c *Client, err error) {
 	return c, nil
 }
 
+func (c *Client) Close() error {
+	if c.conn != nil {
+		return c.conn.Close()
+	}
+	return nil
+}
+
 func (c *Client) ReceiveStatuses(rcvr chan Status, stop <-chan struct{}) {
 	for {
 		select {
@@ -109,4 +115,11 @@ func (c *Client) GetStatus() (result Status, err error) {
 	result = NewStatus(call.Body)
 
 	return
+}
+
+// AttemptUpdate will trigger an update if available. This is an asynchronous
+// call - it returns immediately.
+func (c *Client) AttemptUpdate() error {
+	call := c.object.Call(dbusInterface+".AttemptUpdate", 0)
+	return call.Err
 }
