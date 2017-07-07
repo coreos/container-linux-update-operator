@@ -80,7 +80,16 @@ func (c *Client) Close() error {
 	return nil
 }
 
+// ReceiveStatuses receives signal messages from dbus and sends them as Statues
+// on the rcvr channel, until the stop channel is closed. An attempt is made to
+// get the initial status and send it on the rcvr channel before receiving
+// starts.
 func (c *Client) ReceiveStatuses(rcvr chan Status, stop <-chan struct{}) {
+	// if there is an error getting the current status, ignore it and just
+	// move onto the main loop.
+	st, _ := c.GetStatus()
+	rcvr <- st
+
 	for {
 		select {
 		case <-stop:
@@ -105,6 +114,7 @@ func (c *Client) RebootNeededSignal(rcvr chan Status, stop <-chan struct{}) {
 	}
 }
 
+// GetStatus gets the current status from update_engine
 func (c *Client) GetStatus() (result Status, err error) {
 	call := c.object.Call(dbusInterface+".GetStatus", 0)
 	err = call.Err
