@@ -17,6 +17,7 @@ import (
 
 	"github.com/coreos/container-linux-update-operator/pkg/constants"
 	"github.com/coreos/container-linux-update-operator/pkg/drain"
+	"github.com/coreos/container-linux-update-operator/pkg/hook"
 	"github.com/coreos/container-linux-update-operator/pkg/k8sutil"
 	"github.com/coreos/container-linux-update-operator/pkg/updateengine"
 )
@@ -27,6 +28,7 @@ type Klocksmith struct {
 	nc   v1core.NodeInterface
 	ue   *updateengine.Client
 	lc   *login1.Conn
+	hook *hook.Hook
 }
 
 var (
@@ -36,7 +38,7 @@ var (
 	}).AsSelector()
 )
 
-func New(node string) (*Klocksmith, error) {
+func New(node string, unit string) (*Klocksmith, error) {
 	// set up kubernetes in-cluster client
 	kc, err := k8sutil.InClusterClient()
 	if err != nil {
@@ -58,7 +60,15 @@ func New(node string) (*Klocksmith, error) {
 		return nil, fmt.Errorf("error establishing connection to logind dbus: %v", err)
 	}
 
-	return &Klocksmith{node, kc, nc, ue, lc}, nil
+	var h *hook.Hook
+	if unit != "" {
+		h, err = hook.New(unit)
+		if err != nil {
+			return nil, fmt.Errorf("error establishing connection to systemd dbus: %v", err)
+		}
+	}
+
+	return &Klocksmith{node, kc, nc, ue, lc, h}, nil
 }
 
 // updateStatusCallback receives Status messages from update engine. If the
@@ -153,6 +163,14 @@ func (k *Klocksmith) Run() error {
 			break
 		}
 		glog.Warningf("error waiting for an ok-to-reboot: %v", err)
+	}
+
+	// call the pre-reboot hook target
+	if k.hook != nil {
+		glog.Info("Calling pre-reboot hook unit")
+		if err := k.hook.CompleteUnit(); err != nil {
+			return err
+		}
 	}
 
 	// set constants.AnnotationRebootInProgress and drain self
