@@ -142,7 +142,8 @@ func (k *Klocksmith) Run() error {
 	}
 
 	// watch update engine for status updates
-	go k.watchUpdateStatus(k.updateStatusCallback)
+	watchUpdateStatusStop := make(chan struct{})
+	go k.watchUpdateStatus(k.updateStatusCallback, watchUpdateStatusStop)
 
 	// block until constants.AnnotationOkToReboot is set
 	for {
@@ -154,6 +155,9 @@ func (k *Klocksmith) Run() error {
 		}
 		glog.Warningf("error waiting for an ok-to-reboot: %v", err)
 	}
+
+	// stop watching the update status by closing the channel
+	close(watchUpdateStatusStop)
 
 	// set constants.AnnotationRebootInProgress and drain self
 	anno = map[string]string{
@@ -207,12 +211,11 @@ func (k *Klocksmith) Run() error {
 	return nil
 }
 
-func (k *Klocksmith) watchUpdateStatus(update func(s updateengine.Status)) {
+func (k *Klocksmith) watchUpdateStatus(update func(s updateengine.Status), stop <-chan struct{}) {
 	glog.Info("Beginning to watch update_engine status")
 
 	oldOperation := ""
 	ch := make(chan updateengine.Status, 1)
-	stop := make(chan struct{})
 
 	go k.ue.ReceiveStatuses(ch, stop)
 
