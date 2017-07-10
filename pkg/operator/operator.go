@@ -222,7 +222,7 @@ func (k *Kontroller) Run(ctx context.Context, manageAgent bool, agentImageRepo s
 		}
 
 		for _, n := range justRebootedNodes {
-			glog.V(5).Infof("Setting 'ok-to-reboot=false' for %v", n.Name)
+			glog.Infof("Setting 'ok-to-reboot=false' for %q", n.Name)
 			if err := k8sutil.SetNodeAnnotations(k.nc, n.Name, map[string]string{
 				constants.AnnotationOkToReboot: constants.False,
 			}); err != nil {
@@ -241,6 +241,9 @@ func (k *Kontroller) Run(ctx context.Context, manageAgent bool, agentImageRepo s
 		glog.V(6).Infof("Found %+v rebooting nodes", rebootingNodes)
 		if len(rebootingNodes) >= maxRebootingNodes {
 			glog.Infof("Found %d (of max %d) rebooting nodes; waiting for completion", len(rebootingNodes), maxRebootingNodes)
+			for _, n := range rebootingNodes {
+				glog.Infof("Found node %q still rebooting, waiting", n.Name)
+			}
 			continue
 		}
 
@@ -265,10 +268,10 @@ func (k *Kontroller) Run(ctx context.Context, manageAgent bool, agentImageRepo s
 }
 
 func (k *Kontroller) markNodeRebootable(n *v1api.Node) {
-	glog.V(4).Infof("marking %s ok to reboot", n.Name)
+	glog.Infof("marking %q ok to reboot", n.Name)
 	if err := k8sutil.UpdateNodeRetry(k.nc, n.Name, func(node *v1api.Node) {
 		if !wantsRebootSelector.Matches(fields.Set(node.Annotations)) {
-			glog.Warningf("Node %v no longer wanted to a reboot while we were trying to mark it so: %v", node.Name, node.Annotations)
+			glog.Warningf("Node %v no longer wanted to reboot while we were trying to mark it so: %v", node.Name, node.Annotations)
 			return
 		}
 
