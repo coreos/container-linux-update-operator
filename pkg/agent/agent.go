@@ -104,8 +104,7 @@ func (k *Klocksmith) process(stop <-chan struct{}) error {
 	}
 
 	// watch update engine for status updates
-	watchUpdateStatusStop := make(chan struct{})
-	go k.watchUpdateStatus(k.updateStatusCallback, watchUpdateStatusStop)
+	go k.watchUpdateStatus(k.updateStatusCallback, stop)
 
 	// block until constants.AnnotationOkToReboot is set
 	for {
@@ -117,9 +116,6 @@ func (k *Klocksmith) process(stop <-chan struct{}) error {
 		}
 		glog.Warningf("error waiting for an ok-to-reboot: %v", err)
 	}
-
-	// stop watching the update status by closing the channel
-	close(watchUpdateStatusStop)
 
 	// set constants.AnnotationRebootInProgress and drain self
 	anno = map[string]string{
@@ -168,8 +164,7 @@ func (k *Klocksmith) process(stop <-chan struct{}) error {
 	k.lc.Reboot(false)
 
 	// cross fingers
-	time.Sleep(24 * 7 * time.Hour)
-
+	sleepOrDone(24*7*time.Hour, stop)
 	return nil
 }
 
@@ -350,4 +345,18 @@ func (k *Klocksmith) getPodsForDeletion() ([]v1.Pod, error) {
 	})
 
 	return pods, nil
+}
+
+// sleepOrDone pauses the current goroutine until the done channel receives
+// or until at least the duration d has elapsed, whichever comes first. This
+// is similar to time.Sleep(d), except it can be interrupted.
+func sleepOrDone(d time.Duration, done <-chan struct{}) {
+	sleep := time.NewTimer(d)
+	defer sleep.Stop()
+	select {
+	case <-sleep.C:
+		return
+	case <-done:
+		return
+	}
 }
