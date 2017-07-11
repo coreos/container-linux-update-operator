@@ -219,14 +219,6 @@ func (k *Klocksmith) watchUpdateStatus(update func(s updateengine.Status), stop 
 
 	go k.ue.ReceiveStatuses(ch, stop)
 
-	// synthesize first message
-	st, err := k.ue.GetStatus()
-	if err != nil {
-		glog.Fatalf("Failed to get update_engine status: %v", err)
-	}
-
-	ch <- st
-
 	for status := range ch {
 		if status.CurrentOperation != oldOperation && update != nil {
 			update(status)
