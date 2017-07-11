@@ -1,7 +1,6 @@
 package operator
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"time"
@@ -9,13 +8,13 @@ import (
 	"github.com/golang/glog"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	v1core "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/pkg/api"
 	v1api "k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/client-go/util/flowcontrol"
 
 	// These should be replaced with client-go equivilents when available
 	kapi "k8s.io/kubernetes/pkg/api"
@@ -40,6 +39,8 @@ const (
 
 	// Arbitrarily copied from KVO
 	leaderElectionLease = 90 * time.Second
+	// ReconciliationPeriod
+	reconciliationPeriod = 30 * time.Second
 )
 
 var (
@@ -84,9 +85,20 @@ type Kontroller struct {
 	// configmaps, agents) should be created and read under.
 	// It will be set to the namespace the operator is running in automatically.
 	namespace string
+
+	// Deprecated
+	manageAgent    bool
+	agentImageRepo string
 }
 
-func New() (*Kontroller, error) {
+// Config configures a Kontroller.
+type Config struct {
+	ManageAgent    bool
+	AgentImageRepo string
+}
+
+// New initializes a new Kontroller.
+func New(config Config) (*Kontroller, error) {
 	// set up kubernetes in-cluster client
 	kc, err := k8sutil.InClusterClient()
 	if err != nil {
@@ -123,7 +135,34 @@ func New() (*Kontroller, error) {
 		return nil, fmt.Errorf("unable to determine operator namespace: please ensure POD_NAMESPACE environment variable is set")
 	}
 
-	return &Kontroller{kc, nc, er, leaderElectionClient, leaderElectionEventRecorder, namespace}, nil
+	return &Kontroller{kc, nc, er, leaderElectionClient, leaderElectionEventRecorder, namespace, config.ManageAgent, config.AgentImageRepo}, nil
+}
+
+// Run starts the operator reconcilitation proces and runs until the stop
+// channel is closed.
+func (k *Kontroller) Run(stop <-chan struct{}) error {
+	err := k.withLeaderElection()
+	if err != nil {
+		return err
+	}
+
+	// Before doing anytihng else, make sure the associated agent daemonset is
+	// ready if it's our responsibility.
+	if k.manageAgent && k.agentImageRepo != "" {
+		err := k.runDaemonsetUpdate(k.agentImageRepo)
+		if err != nil {
+			glog.Errorf("unable to ensure managed agents are ready: %v", err)
+			return err
+		}
+	}
+
+	glog.V(5).Info("starting controller")
+
+	// call the process loop each period, until stop is closed
+	wait.Until(k.process, reconciliationPeriod, stop)
+
+	glog.V(5).Info("stopping controller")
+	return nil
 }
 
 // withLeaderElection creates a new context which is cancelled when this
@@ -184,91 +223,71 @@ func (k *Kontroller) withLeaderElection() error {
 	return nil
 }
 
-func (k *Kontroller) Run(ctx context.Context, manageAgent bool, agentImageRepo string) error {
-	err := k.withLeaderElection()
+// process performs the reconcilitation to coordinate reboots.
+func (k *Kontroller) process() {
+	glog.V(4).Info("Going through a loop cycle")
+
+	nodelist, err := k.nc.List(v1meta.ListOptions{})
 	if err != nil {
-		return err
-	}
-	glog.V(5).Info("Starting run loop")
-
-	rl := flowcontrol.NewTokenBucketRateLimiter(0.2, 1)
-
-	// Before doing anytihng else, make sure the associated agent daemonset is
-	// ready if it's our responsibility.
-	if manageAgent {
-		err := k.runDaemonsetUpdate(agentImageRepo)
-		if err != nil {
-			glog.Errorf("unable to ensure managed agents are ready: %v", err)
-			return err
-		}
+		glog.Infof("Failed listing nodes %v", err)
+		return
 	}
 
-	for {
-		rl.Accept()
-		glog.V(4).Info("Going through a loop cycle")
+	glog.V(6).Infof("Found nodes: %+v", nodelist.Items)
 
-		nodelist, err := k.nc.List(v1meta.ListOptions{})
-		if err != nil {
-			glog.Infof("Failed listing nodes %v", err)
-			continue
+	justRebootedNodes := k8sutil.FilterNodesByAnnotation(nodelist.Items, justRebootedSelector)
+
+	if len(justRebootedNodes) > 0 {
+		glog.Infof("Found %d rebooted nodes, setting annotation %q to false", len(justRebootedNodes), constants.AnnotationOkToReboot)
+	}
+
+	for _, n := range justRebootedNodes {
+		glog.Infof("Setting 'ok-to-reboot=false' for %q", n.Name)
+		if err := k8sutil.SetNodeAnnotations(k.nc, n.Name, map[string]string{
+			constants.AnnotationOkToReboot: constants.False,
+		}); err != nil {
+			glog.Infof("Failed setting annotation %q on node %q to false: %v", constants.AnnotationOkToReboot, n.Name, err)
 		}
+	}
 
-		glog.V(6).Infof("Found nodes: %+v", nodelist.Items)
+	nodelist, err = k.nc.List(v1meta.ListOptions{})
+	if err != nil {
+		glog.Infof("Failed listing nodes: %v", err)
+		return
+	}
 
-		justRebootedNodes := k8sutil.FilterNodesByAnnotation(nodelist.Items, justRebootedSelector)
-
-		if len(justRebootedNodes) > 0 {
-			glog.Infof("Found %d rebooted nodes, setting annotation %q to false", len(justRebootedNodes), constants.AnnotationOkToReboot)
+	// Verify no nodes are still in the process of rebooting to avoid rebooting N > maxRebootingNodes
+	rebootingNodes := k8sutil.FilterNodesByAnnotation(nodelist.Items, stillRebootingSelector)
+	glog.V(6).Infof("Found %+v rebooting nodes", rebootingNodes)
+	if len(rebootingNodes) >= maxRebootingNodes {
+		glog.Infof("Found %d (of max %d) rebooting nodes; waiting for completion", len(rebootingNodes), maxRebootingNodes)
+		for _, n := range rebootingNodes {
+			glog.Infof("Found node %q still rebooting, waiting", n.Name)
 		}
+		return
+	}
 
-		for _, n := range justRebootedNodes {
-			glog.Infof("Setting 'ok-to-reboot=false' for %q", n.Name)
-			if err := k8sutil.SetNodeAnnotations(k.nc, n.Name, map[string]string{
-				constants.AnnotationOkToReboot: constants.False,
-			}); err != nil {
-				glog.Infof("Failed setting annotation %q on node %q to false: %v", constants.AnnotationOkToReboot, n.Name, err)
-			}
-		}
+	rebootableNodes := k8sutil.FilterNodesByAnnotation(nodelist.Items, wantsRebootSelector)
+	if len(rebootableNodes) == 0 {
+		return
+	}
 
-		nodelist, err = k.nc.List(v1meta.ListOptions{})
-		if err != nil {
-			glog.Infof("Failed listing nodes: %v", err)
-			continue
-		}
+	remainingRebootableCount := maxRebootingNodes - len(rebootingNodes)
+	// pick N of the eligible candidates to reboot
+	chosenNodes := make([]*v1api.Node, 0, remainingRebootableCount)
+	for i := 0; i < remainingRebootableCount && i < len(rebootableNodes); i++ {
+		chosenNodes = append(chosenNodes, &rebootableNodes[i])
+	}
 
-		// Verify no nodes are still in the process of rebooting to avoid rebooting N > maxRebootingNodes
-		rebootingNodes := k8sutil.FilterNodesByAnnotation(nodelist.Items, stillRebootingSelector)
-		glog.V(6).Infof("Found %+v rebooting nodes", rebootingNodes)
-		if len(rebootingNodes) >= maxRebootingNodes {
-			glog.Infof("Found %d (of max %d) rebooting nodes; waiting for completion", len(rebootingNodes), maxRebootingNodes)
-			for _, n := range rebootingNodes {
-				glog.Infof("Found node %q still rebooting, waiting", n.Name)
-			}
-			continue
-		}
-
-		rebootableNodes := k8sutil.FilterNodesByAnnotation(nodelist.Items, wantsRebootSelector)
-		if len(rebootableNodes) == 0 {
-			continue
-		}
-
-		remainingRebootableCount := maxRebootingNodes - len(rebootingNodes)
-		// pick N of the eligible candidates to reboot
-		chosenNodes := make([]*v1api.Node, 0, remainingRebootableCount)
-		for i := 0; i < remainingRebootableCount && i < len(rebootableNodes); i++ {
-			chosenNodes = append(chosenNodes, &rebootableNodes[i])
-		}
-
-		glog.Infof("Found %d nodes that need a reboot", len(chosenNodes))
-		for _, node := range chosenNodes {
-			k.markNodeRebootable(node)
-		}
-
+	glog.Infof("Found %d nodes that need a reboot", len(chosenNodes))
+	for _, node := range chosenNodes {
+		k.markNodeRebootable(node)
 	}
 }
 
+// markNodeRebootable adds ok to reboot annotations to the given node.
 func (k *Kontroller) markNodeRebootable(n *v1api.Node) {
-	glog.Infof("marking %q ok to reboot", n.Name)
+	glog.Infof("Marking %q ok to reboot", n.Name)
 	if err := k8sutil.UpdateNodeRetry(k.nc, n.Name, func(node *v1api.Node) {
 		if !wantsRebootSelector.Matches(fields.Set(node.Annotations)) {
 			glog.Warningf("Node %v no longer wanted to reboot while we were trying to mark it so: %v", node.Name, node.Annotations)

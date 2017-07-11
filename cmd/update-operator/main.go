@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -38,7 +37,10 @@ func main() {
 		analytics.Enable()
 	}
 
-	o, err := operator.New()
+	o, err := operator.New(operator.Config{
+		ManageAgent:    *manageAgent,
+		AgentImageRepo: *agentImageRepo,
+	})
 	if err != nil {
 		glog.Fatalf("Failed to initialize %s: %v", os.Args[0], err)
 	}
@@ -47,7 +49,11 @@ func main() {
 
 	analytics.ControllerStarted()
 
-	if err := o.Run(context.Background(), *manageAgent, *agentImageRepo); err != nil {
-		glog.Fatalf("Error while running %s: %v", os.Args[0], err)
+	// Run operator until the stop channel is closed
+	stop := make(chan struct{})
+	defer close(stop)
+
+	if err := o.Run(stop); err != nil {
+		glog.Fatalf("error while running %s: %v", os.Args[0], err)
 	}
 }
