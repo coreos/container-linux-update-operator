@@ -19,6 +19,9 @@ import (
 )
 
 // The possible update statuses returned from the update engine
+//
+// These correspond to current operation values exposed over DBus and defined by `update_engine`:
+// https://github.com/coreos/update_engine/blob/v0.4.3/src/update_engine/update_attempter.h#L34-L43
 const (
 	UpdateStatusIdle                = "UPDATE_STATUS_IDLE"
 	UpdateStatusCheckingForUpdate   = "UPDATE_STATUS_CHECKING_FOR_UPDATE"
