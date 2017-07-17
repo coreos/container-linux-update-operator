@@ -1,7 +1,6 @@
 package agent
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -225,28 +224,6 @@ func (k *Klocksmith) watchUpdateStatus(update func(s updateengine.Status), stop 
 			oldOperation = status.CurrentOperation
 		}
 	}
-}
-
-// waitForRebootSignal watches update_engine and waits for
-// updateengine.UpdateStatusUpdatedNeedReboot
-func (k *Klocksmith) waitForRebootSignal() error {
-	// first, check current status.
-	status, err := k.ue.GetStatus()
-	if err != nil {
-		return fmt.Errorf("failed to get update_engine status: %v", err)
-	}
-
-	// if we're not in UpdateStatusUpdatedNeedReboot, then wait for it.
-	if status.CurrentOperation != updateengine.UpdateStatusUpdatedNeedReboot {
-		ctx, cancel := context.WithCancel(context.Background())
-		stc := make(chan updateengine.Status)
-		go k.ue.RebootNeededSignal(stc, ctx.Done())
-		<-stc
-		cancel()
-	}
-
-	// we are now in UpdateStatusUpdatedNeedReboot state.
-	return nil
 }
 
 // waitForOkToReboot waits for both 'ok-to-reboot' and 'needs-reboot' to be true.
