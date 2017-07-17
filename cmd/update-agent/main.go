@@ -41,7 +41,8 @@ func main() {
 
 	glog.Infof("%s running", os.Args[0])
 
-	if err := a.Run(); err != nil {
-		glog.Fatalf("Error while running %s: %v", os.Args[0], err)
-	}
+	// Run agent until the stop channel is closed
+	stop := make(chan struct{})
+	defer close(stop)
+	a.Run(stop)
 }

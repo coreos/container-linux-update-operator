@@ -60,59 +60,22 @@ func New(node string) (*Klocksmith, error) {
 	return &Klocksmith{node, kc, nc, ue, lc}, nil
 }
 
-// updateStatusCallback receives Status messages from update engine. If the
-// status is UpdateStatusUpdatedNeedReboot, indicate that with a label on our
-// node.
-func (k *Klocksmith) updateStatusCallback(s updateengine.Status) {
-	glog.Info("Updating status")
-	// update our status
-	anno := map[string]string{
-		constants.AnnotationStatus:          s.CurrentOperation,
-		constants.AnnotationLastCheckedTime: fmt.Sprintf("%d", s.LastCheckedTime),
-		constants.AnnotationNewVersion:      s.NewVersion,
+// Run starts the agent to listen for an update_engine reboot signal and react
+// by draining pods and rebooting. Runs until the stop channel is closed.
+func (k *Klocksmith) Run(stop <-chan struct{}) {
+	glog.V(5).Info("Starting agent")
+
+	// agent process should reboot the node, no need to loop
+	if err := k.process(stop); err != nil {
+		glog.Errorf("Error running agent process: %v", err)
 	}
 
-	// indicate we need a reboot
-	if s.CurrentOperation == updateengine.UpdateStatusUpdatedNeedReboot {
-		glog.Info("Indicating a reboot is needed")
-		anno[constants.AnnotationRebootNeeded] = constants.True
-	}
-
-	wait.PollUntil(10*time.Second, func() (bool, error) {
-		if err := k8sutil.SetNodeAnnotations(k.nc, k.node, anno); err != nil {
-			glog.Errorf("Failed to set annotation %q: %v", constants.AnnotationStatus, err)
-			return false, nil
-		}
-
-		return true, nil
-	}, wait.NeverStop)
+	glog.V(5).Info("Stopping agent")
 }
 
-// setInfoLabels labels our node with helpful info about Container Linux.
-func (k *Klocksmith) setInfoLabels() error {
-	vi, err := k8sutil.GetVersionInfo()
-	if err != nil {
-		return fmt.Errorf("failed to get version info: %v", err)
-	}
-
-	labels := map[string]string{
-		constants.LabelID:      vi.ID,
-		constants.LabelGroup:   vi.Group,
-		constants.LabelVersion: vi.Version,
-	}
-
-	if err := k8sutil.SetNodeLabels(k.nc, k.node, labels); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Run runs klocksmithd, reacting to the update_engine reboot signal by
-// draining pods on this kubernetes node and rebooting.
-//
-// TODO(mischief): try to be more resilient against transient failures
-func (k *Klocksmith) Run() error {
+// process performs the agent reconciliation to reboot the node or stops when
+// the stop channel is closed.
+func (k *Klocksmith) process(stop <-chan struct{}) error {
 	glog.Info("Setting info labels")
 	if err := k.setInfoLabels(); err != nil {
 		return fmt.Errorf("failed to set node info: %v", err)
@@ -141,8 +104,7 @@ func (k *Klocksmith) Run() error {
 	}
 
 	// watch update engine for status updates
-	watchUpdateStatusStop := make(chan struct{})
-	go k.watchUpdateStatus(k.updateStatusCallback, watchUpdateStatusStop)
+	go k.watchUpdateStatus(k.updateStatusCallback, stop)
 
 	// block until constants.AnnotationOkToReboot is set
 	for {
@@ -154,9 +116,6 @@ func (k *Klocksmith) Run() error {
 		}
 		glog.Warningf("error waiting for an ok-to-reboot: %v", err)
 	}
-
-	// stop watching the update status by closing the channel
-	close(watchUpdateStatusStop)
 
 	// set constants.AnnotationRebootInProgress and drain self
 	anno = map[string]string{
@@ -205,7 +164,54 @@ func (k *Klocksmith) Run() error {
 	k.lc.Reboot(false)
 
 	// cross fingers
-	time.Sleep(24 * 7 * time.Hour)
+	sleepOrDone(24*7*time.Hour, stop)
+	return nil
+}
+
+// updateStatusCallback receives Status messages from update engine. If the
+// status is UpdateStatusUpdatedNeedReboot, indicate that with a label on our
+// node.
+func (k *Klocksmith) updateStatusCallback(s updateengine.Status) {
+	glog.Info("Updating status")
+	// update our status
+	anno := map[string]string{
+		constants.AnnotationStatus:          s.CurrentOperation,
+		constants.AnnotationLastCheckedTime: fmt.Sprintf("%d", s.LastCheckedTime),
+		constants.AnnotationNewVersion:      s.NewVersion,
+	}
+
+	// indicate we need a reboot
+	if s.CurrentOperation == updateengine.UpdateStatusUpdatedNeedReboot {
+		glog.Info("Indicating a reboot is needed")
+		anno[constants.AnnotationRebootNeeded] = constants.True
+	}
+
+	wait.PollUntil(10*time.Second, func() (bool, error) {
+		if err := k8sutil.SetNodeAnnotations(k.nc, k.node, anno); err != nil {
+			glog.Errorf("Failed to set annotation %q: %v", constants.AnnotationStatus, err)
+			return false, nil
+		}
+
+		return true, nil
+	}, wait.NeverStop)
+}
+
+// setInfoLabels labels our node with helpful info about Container Linux.
+func (k *Klocksmith) setInfoLabels() error {
+	vi, err := k8sutil.GetVersionInfo()
+	if err != nil {
+		return fmt.Errorf("failed to get version info: %v", err)
+	}
+
+	labels := map[string]string{
+		constants.LabelID:      vi.ID,
+		constants.LabelGroup:   vi.Group,
+		constants.LabelVersion: vi.Version,
+	}
+
+	if err := k8sutil.SetNodeLabels(k.nc, k.node, labels); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -339,4 +345,18 @@ func (k *Klocksmith) getPodsForDeletion() ([]v1.Pod, error) {
 	})
 
 	return pods, nil
+}
+
+// sleepOrDone pauses the current goroutine until the done channel receives
+// or until at least the duration d has elapsed, whichever comes first. This
+// is similar to time.Sleep(d), except it can be interrupted.
+func sleepOrDone(d time.Duration, done <-chan struct{}) {
+	sleep := time.NewTimer(d)
+	defer sleep.Stop()
+	select {
+	case <-sleep.C:
+		return
+	case <-done:
+		return
+	}
 }
