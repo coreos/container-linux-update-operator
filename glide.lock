@@ -1,5 +1,5 @@
-hash: 297a31fd129c74404ac434b5efff42452c59d759fafc26013e2056a36498074d
-updated: 2017-07-10T13:02:45.876608876-07:00
+hash: 79f5da618b2d9787e34a535f9268bd23aeb9ebda23516db6ac7b3ea04d30ea50
+updated: 2017-07-18T14:44:24.558751848-07:00
 imports:
 - name: github.com/blang/semver
   version: 31b736133b98f26d5e078ec9eb591666edfd091f
@@ -38,7 +38,7 @@ imports:
 - name: github.com/godbus/dbus
   version: 5f6efc7ef2759c81b7ba876593971bfce311eab3
 - name: github.com/gogo/protobuf
-  version: 909568be09de550ed094403c2bf8a261b5bb730a
+  version: e18d7aa8f8c624c915db340349aad4c49b10d173
   subpackages:
   - proto
   - sortkeys
@@ -77,8 +77,6 @@ imports:
 - name: golang.org/x/net
   version: e90d6d0afc4c315a0d87a568ae68577cc15149a0
   subpackages:
-  - context
-  - context/ctxhttp
   - http2
   - http2/hpack
   - idna
