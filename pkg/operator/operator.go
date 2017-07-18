@@ -93,17 +93,19 @@ type Kontroller struct {
 
 // Config configures a Kontroller.
 type Config struct {
+	// Kubernetesc client
+	Client         *kubernetes.Clientset
 	ManageAgent    bool
 	AgentImageRepo string
 }
 
 // New initializes a new Kontroller.
 func New(config Config) (*Kontroller, error) {
-	// set up kubernetes in-cluster client
-	kc, err := k8sutil.InClusterClient()
-	if err != nil {
-		return nil, fmt.Errorf("error creating Kubernetes client: %v", err)
+	// kubernetes client
+	if config.Client == nil {
+		return nil, fmt.Errorf("Kubernetes client must not be nil")
 	}
+	kc := config.Client
 
 	// node interface
 	nc := kc.Nodes()

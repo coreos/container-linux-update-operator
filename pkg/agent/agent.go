@@ -37,7 +37,7 @@ var (
 
 func New(node string) (*Klocksmith, error) {
 	// set up kubernetes in-cluster client
-	kc, err := k8sutil.InClusterClient()
+	kc, err := k8sutil.GetClient("")
 	if err != nil {
 		return nil, fmt.Errorf("error creating kubernetes client: %v", err)
 	}
