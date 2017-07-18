@@ -29,11 +29,6 @@ import:
   - pkg/watch
   - rest
   - tools/record
-- package: github.com/gogo/protobuf
-  version: v0.3
-  subpackages:
-  - proto
-  - sortkeys
 - package: k8s.io/kubernetes
   version: 477efc3cbe6a7effca06bd1452fa356e2201e1ee
   subpackages:
