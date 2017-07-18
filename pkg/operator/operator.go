@@ -75,7 +75,7 @@ var (
 )
 
 type Kontroller struct {
-	kc *kubernetes.Clientset
+	kc kubernetes.Interface
 	nc v1core.NodeInterface
 	er record.EventRecorder
 
@@ -94,7 +94,7 @@ type Kontroller struct {
 // Config configures a Kontroller.
 type Config struct {
 	// Kubernetesc client
-	Client         *kubernetes.Clientset
+	Client         kubernetes.Interface
 	ManageAgent    bool
 	AgentImageRepo string
 }
@@ -108,11 +108,11 @@ func New(config Config) (*Kontroller, error) {
 	kc := config.Client
 
 	// node interface
-	nc := kc.Nodes()
+	nc := kc.CoreV1().Nodes()
 
 	// create event emitter
 	broadcaster := record.NewBroadcaster()
-	broadcaster.StartRecordingToSink(&v1core.EventSinkImpl{Interface: kc.Events("")})
+	broadcaster.StartRecordingToSink(&v1core.EventSinkImpl{Interface: kc.CoreV1().Events("")})
 	er := broadcaster.NewRecorder(api.Scheme, v1api.EventSource{Component: eventSourceComponent})
 
 	leaderElectionClientConfig, err := rest.InClusterConfig()
