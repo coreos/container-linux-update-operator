@@ -8,13 +8,13 @@ spec:
     metadata:
       labels:
         app: container-linux-update-agent
-        container-linux-update.v1.coreos.com/agent-version: v0.2.1
+        container-linux-update.v1.coreos.com/agent-version: v0.2.2
       annotations:
-        container-linux-update.v1.coreos.com/agent-version: v0.2.1
+        container-linux-update.v1.coreos.com/agent-version: v0.2.2
     spec:
       containers:
       - name: update-agent
-        image: quay.io/coreos/container-linux-update-operator:v0.2.1
+        image: quay.io/coreos/container-linux-update-operator:v0.2.2
         command:
         - "/bin/update-agent"
         volumeMounts:
