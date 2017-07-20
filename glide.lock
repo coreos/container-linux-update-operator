@@ -1,5 +1,5 @@
-hash: 97ddf3b7613d057b3390458507785305b95541bbeb2f967a2efce0640158f720
-updated: 2017-07-19T10:04:31.772812554-07:00
+hash: 5f259c6c01bb802851ec3edec8a481d8548e7c56e5dfb50cd3daae99d25ca5bd
+updated: 2017-07-20T15:01:02.765904808-07:00
 imports:
 - name: github.com/blang/semver
   version: 31b736133b98f26d5e078ec9eb591666edfd091f
@@ -54,6 +54,10 @@ imports:
   - gomock
 - name: github.com/google/gofuzz
   version: 44d81051d367757e1c7c6a5a86423ece9afcf63c
+- name: github.com/howeyc/gopass
+  version: 3ca23474a7c7203e0a0a070fd33508f6efdb9b3d
+- name: github.com/imdario/mergo
+  version: 6633656539c1639d9d78127b7d47c622b5d7b6dc
 - name: github.com/jpillora/go-ogle-analytics
   version: 14b04e0594ef6a9fd943363b135656f0ec8c9d0e
 - name: github.com/juju/ratelimit
@@ -74,6 +78,10 @@ imports:
   version: ded73eae5db7e7a0ef6f55aace87a2873c5d2b74
   subpackages:
   - codec
+- name: golang.org/x/crypto
+  version: d172538b2cfce0c13cee31e647d0367aa8cd2486
+  subpackages:
+  - ssh/terminal
 - name: golang.org/x/net
   version: e90d6d0afc4c315a0d87a568ae68577cc15149a0
   subpackages:
@@ -83,6 +91,10 @@ imports:
   - http2/hpack
   - idna
   - lex/httplex
+- name: golang.org/x/sys
+  version: 8f0908ab3b2457e2e15403d3697c9ef5cb4b57a9
+  subpackages:
+  - unix
 - name: golang.org/x/text
   version: 2910a502d2bf9e43193af9d68ca516529614eed3
   subpackages:
@@ -223,13 +235,18 @@ imports:
   - pkg/watch
   - rest
   - rest/watch
+  - tools/auth
+  - tools/clientcmd
   - tools/clientcmd/api
+  - tools/clientcmd/api/latest
+  - tools/clientcmd/api/v1
   - tools/metrics
   - tools/record
   - transport
   - util/cert
   - util/clock
   - util/flowcontrol
+  - util/homedir
   - util/integer
 - name: k8s.io/kubernetes
   version: 477efc3cbe6a7effca06bd1452fa356e2201e1ee
