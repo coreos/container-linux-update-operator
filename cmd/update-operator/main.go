@@ -9,11 +9,13 @@ import (
 	"github.com/golang/glog"
 
 	"github.com/coreos/container-linux-update-operator/pkg/analytics"
+	"github.com/coreos/container-linux-update-operator/pkg/k8sutil"
 	"github.com/coreos/container-linux-update-operator/pkg/operator"
 	"github.com/coreos/container-linux-update-operator/pkg/version"
 )
 
 var (
+	kubeconfig       = flag.String("kubeconfig", "", "Path to a kubeconfig file. Default to the in-cluster config if not provided.")
 	analyticsEnabled = flag.Bool("analytics", true, "Send analytics to Google Analytics")
 	printVersion     = flag.Bool("version", false, "Print version and exit")
 	// deprecated
@@ -27,6 +29,10 @@ func main() {
 
 	if err := flagutil.SetFlagsFromEnv(flag.CommandLine, "UPDATE_OPERATOR"); err != nil {
 		glog.Fatalf("Failed to parse environment variables: %v", err)
+	}
+	// respect KUBECONFIG without the prefix as well
+	if *kubeconfig == "" {
+		*kubeconfig = os.Getenv("KUBECONFIG")
 	}
 
 	if *printVersion {
@@ -42,7 +48,15 @@ func main() {
 		glog.Warning("Use of -manage-agent=true is deprecated and will be removed in the future")
 	}
 
+	// create Kubernetes client (clientset)
+	client, err := k8sutil.GetClient(*kubeconfig)
+	if err != nil {
+		glog.Fatalf("Failed to create Kubernetes client: %v", err)
+	}
+
+	// update-operator
 	o, err := operator.New(operator.Config{
+		Client:         client,
 		ManageAgent:    *manageAgent,
 		AgentImageRepo: *agentImageRepo,
 	})

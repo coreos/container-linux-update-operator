@@ -53,6 +53,10 @@ import:
   - gomock
 - package: github.com/google/gofuzz
   version: 44d81051d367757e1c7c6a5a86423ece9afcf63c
+- package: github.com/howeyc/gopass
+  version: 3ca23474a7c7203e0a0a070fd33508f6efdb9b3d
+- package: github.com/imdario/mergo
+  version: 6633656539c1639d9d78127b7d47c622b5d7b6dc
 - package: github.com/jpillora/go-ogle-analytics
   version: 14b04e0594ef6a9fd943363b135656f0ec8c9d0e
 - package: github.com/juju/ratelimit
@@ -73,6 +77,10 @@ import:
   version: ded73eae5db7e7a0ef6f55aace87a2873c5d2b74
   subpackages:
   - codec
+- package: golang.org/x/crypto
+  version: d172538b2cfce0c13cee31e647d0367aa8cd2486
+  subpackages:
+  - ssh/terminal
 - package: golang.org/x/net
   version: e90d6d0afc4c315a0d87a568ae68577cc15149a0
   subpackages:
@@ -82,6 +90,10 @@ import:
   - http2/hpack
   - idna
   - lex/httplex
+- package: golang.org/x/sys
+  version: 8f0908ab3b2457e2e15403d3697c9ef5cb4b57a9
+  subpackages:
+  - unix
 - package: golang.org/x/text
   version: 2910a502d2bf9e43193af9d68ca516529614eed3
   subpackages:
@@ -222,13 +234,18 @@ import:
   - pkg/watch
   - rest
   - rest/watch
+  - tools/auth
+  - tools/clientcmd
   - tools/clientcmd/api
+  - tools/clientcmd/api/latest
+  - tools/clientcmd/api/v1
   - tools/metrics
   - tools/record
   - transport
   - util/cert
   - util/clock
   - util/flowcontrol
+  - util/homedir
   - util/integer
 - package: k8s.io/kubernetes
   version: 477efc3cbe6a7effca06bd1452fa356e2201e1ee

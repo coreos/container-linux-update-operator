@@ -31,7 +31,7 @@ var (
 // Furthermore, it's assumed that all future agent versions will be backwards
 // compatible, so if the agent's version is greater than ours, it's okay.
 func (k *Kontroller) runDaemonsetUpdate(agentImageRepo string) error {
-	agentDaemonsets, err := k.kc.DaemonSets(k.namespace).List(v1meta.ListOptions{
+	agentDaemonsets, err := k.kc.ExtensionsV1beta1().DaemonSets(k.namespace).List(v1meta.ListOptions{
 		LabelSelector: labels.SelectorFromSet(labels.Set(managedByOperatorLabels)).String(),
 	})
 	if err != nil {
@@ -76,7 +76,7 @@ func (k *Kontroller) runDaemonsetUpdate(agentImageRepo string) error {
 		// painful to do correctly. In addition, doing it correctly doesn't add too
 		// much value unless we have corresponding detection/rollback logic.
 		falseVal := false
-		err := k.kc.DaemonSets(k.namespace).Delete(agentDS.Name, &v1meta.DeleteOptions{
+		err := k.kc.ExtensionsV1beta1().DaemonSets(k.namespace).Delete(agentDS.Name, &v1meta.DeleteOptions{
 			OrphanDependents: &falseVal, // Cascading delete
 		})
 		if err != nil {
@@ -95,7 +95,7 @@ func (k *Kontroller) runDaemonsetUpdate(agentImageRepo string) error {
 }
 
 func (k *Kontroller) createAgentDamonset(agentImageRepo string) error {
-	_, err := k.kc.DaemonSets(k.namespace).Create(agentDaemonsetSpec(agentImageRepo))
+	_, err := k.kc.ExtensionsV1beta1().DaemonSets(k.namespace).Create(agentDaemonsetSpec(agentImageRepo))
 	return err
 }
 

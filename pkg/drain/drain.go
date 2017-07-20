@@ -18,8 +18,8 @@ import (
 // This code mimics pod filtering behavior in
 // https://github.com/kubernetes/kubernetes/blob/v1.5.4/pkg/kubectl/cmd/drain.go#L234-L245
 // See DrainOptions.getPodsForDeletion and callees.
-func GetPodsForDeletion(kc *kubernetes.Clientset, node string) (pods []v1api.Pod, err error) {
-	podList, err := kc.Core().Pods(v1api.NamespaceAll).List(v1meta.ListOptions{
+func GetPodsForDeletion(kc kubernetes.Interface, node string) (pods []v1api.Pod, err error) {
+	podList, err := kc.CoreV1().Pods(v1api.NamespaceAll).List(v1meta.ListOptions{
 		FieldSelector: fields.SelectorFromSet(fields.Set{"spec.nodeName": node}).String(),
 	})
 	if err != nil {
@@ -67,10 +67,10 @@ func GetPodsForDeletion(kc *kubernetes.Clientset, node string) (pods []v1api.Pod
 // Pared down version of
 // https://github.com/kubernetes/kubernetes/blob/cbbf22a7d2b06a55066b16885a4baaf4ce92d3a4/pkg/kubectl/cmd/drain.go's
 // getDaemonsetController().
-func getDaemonsetController(kc *kubernetes.Clientset, sr *api.SerializedReference) (interface{}, error) {
+func getDaemonsetController(kc kubernetes.Interface, sr *api.SerializedReference) (interface{}, error) {
 	switch sr.Reference.Kind {
 	case "DaemonSet":
-		return kc.DaemonSets(sr.Reference.Namespace).Get(sr.Reference.Name, v1meta.GetOptions{})
+		return kc.ExtensionsV1beta1().DaemonSets(sr.Reference.Namespace).Get(sr.Reference.Name, v1meta.GetOptions{})
 	}
 	return nil, fmt.Errorf("unknown controller kind %q", sr.Reference.Kind)
 }

@@ -22,7 +22,7 @@ import (
 
 type Klocksmith struct {
 	node string
-	kc   *kubernetes.Clientset
+	kc   kubernetes.Interface
 	nc   v1core.NodeInterface
 	ue   *updateengine.Client
 	lc   *login1.Conn
@@ -37,13 +37,13 @@ var (
 
 func New(node string) (*Klocksmith, error) {
 	// set up kubernetes in-cluster client
-	kc, err := k8sutil.InClusterClient()
+	kc, err := k8sutil.GetClient("")
 	if err != nil {
 		return nil, fmt.Errorf("error creating kubernetes client: %v", err)
 	}
 
 	// node interface
-	nc := kc.Nodes()
+	nc := kc.CoreV1().Nodes()
 
 	// set up update_engine client
 	ue, err := updateengine.New()
@@ -152,7 +152,7 @@ func (k *Klocksmith) process(stop <-chan struct{}) error {
 	deleteOptions := v1meta.NewDeleteOptions(30)
 	for _, pod := range pods {
 		glog.Infof("Terminating pod %q...", pod.Name)
-		if err := k.kc.Pods(pod.Namespace).Delete(pod.Name, deleteOptions); err != nil {
+		if err := k.kc.CoreV1().Pods(pod.Namespace).Delete(pod.Name, deleteOptions); err != nil {
 			glog.Errorf("failed terminating pod %q: %v", pod.Name, err)
 			// Continue anyways, the reboot should terminate it
 		}
