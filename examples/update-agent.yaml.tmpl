@@ -4,13 +4,14 @@ metadata:
   name: container-linux-update-agent
   namespace: kube-system
 spec:
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
   template:
     metadata:
       labels:
         app: container-linux-update-agent
-        container-linux-update.v1.coreos.com/agent-version: v${VERSION}
-      annotations:
-        container-linux-update.v1.coreos.com/agent-version: v${VERSION}
     spec:
       containers:
       - name: update-agent
