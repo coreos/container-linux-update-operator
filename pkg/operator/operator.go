@@ -241,58 +241,104 @@ func (k *Kontroller) withLeaderElection() error {
 func (k *Kontroller) process() {
 	glog.V(4).Info("Going through a loop cycle")
 
-	nodelist, err := k.nc.List(v1meta.ListOptions{})
+	// update nodes which just rebooted
+	err := k.updateJustRebootedNodes()
 	if err != nil {
-		glog.Infof("Failed listing nodes %v", err)
+		glog.Errorf("Failed to update recently rebooted nodes: %v", err)
 		return
 	}
 
-	glog.V(6).Infof("Found nodes: %+v", nodelist.Items)
+	// get all currently rebooting nodes
+	rebootingNodes, err := k.getRebootingNodes()
+	if err != nil {
+		glog.Errorf("Failed to get rebooting nodes: %v", err)
+		return
+	}
+	glog.V(6).Infof("Found %+v rebooting nodes", rebootingNodes)
 
+	// get all rebootable nodes
+	rebootableNodes, err := k.getRebootableNodes()
+	if err != nil {
+		glog.Errorf("Failed to get rebootable nodes: %v", err)
+		return
+	}
+	glog.V(6).Infof("Found %+v rebootable nodes", rebootableNodes)
+
+	// otherwise pick N of the eligible candidates to reboot
+	remainingRebootableCount := maxRebootingNodes - len(rebootingNodes)
+	// markSomeNodesRebootable returns immediately if len(rebootableNodes) == 0
+	k.markSomeNodesRebootable(rebootableNodes, remainingRebootableCount)
+}
+
+func (k *Kontroller) updateJustRebootedNodes() error {
+	nodelist, err := k.nc.List(v1meta.ListOptions{})
+	if err != nil {
+		return fmt.Errorf("Failed listing nodes %v", err)
+	}
+
+	// find nodes which just rebooted
 	justRebootedNodes := k8sutil.FilterNodesByAnnotation(nodelist.Items, justRebootedSelector)
 
 	if len(justRebootedNodes) > 0 {
 		glog.Infof("Found %d rebooted nodes, setting annotation %q to false", len(justRebootedNodes), constants.AnnotationOkToReboot)
 	}
 
+	// for all the nodes which just rebooted, set reboot-ok=true
 	for _, n := range justRebootedNodes {
 		glog.Infof("Setting 'ok-to-reboot=false' for %q", n.Name)
 		if err := k8sutil.SetNodeAnnotations(k.nc, n.Name, map[string]string{
 			constants.AnnotationOkToReboot: constants.False,
 		}); err != nil {
 			glog.Infof("Failed setting annotation %q on node %q to false: %v", constants.AnnotationOkToReboot, n.Name, err)
+			return err
 		}
 	}
 
-	nodelist, err = k.nc.List(v1meta.ListOptions{})
+	return nil
+}
+
+func (k *Kontroller) getRebootableNodes() ([]v1api.Node, error) {
+	nodelist, err := k.nc.List(v1meta.ListOptions{})
 	if err != nil {
-		glog.Infof("Failed listing nodes: %v", err)
-		return
-	}
-
-	// Verify no nodes are still in the process of rebooting to avoid rebooting N > maxRebootingNodes
-	rebootingNodes := k8sutil.FilterNodesByAnnotation(nodelist.Items, stillRebootingSelector)
-	glog.V(6).Infof("Found %+v rebooting nodes", rebootingNodes)
-	if len(rebootingNodes) >= maxRebootingNodes {
-		glog.Infof("Found %d (of max %d) rebooting nodes; waiting for completion", len(rebootingNodes), maxRebootingNodes)
-		for _, n := range rebootingNodes {
-			glog.Infof("Found node %q still rebooting, waiting", n.Name)
-		}
-		return
+		return nil, fmt.Errorf("Failed listing nodes %v", err)
 	}
 
 	rebootableNodes := k8sutil.FilterNodesByAnnotation(nodelist.Items, wantsRebootSelector)
+
+	return rebootableNodes, nil
+}
+
+func (k *Kontroller) getRebootingNodes() ([]v1api.Node, error) {
+	nodelist, err := k.nc.List(v1meta.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("Failed listing nodes %v", err)
+	}
+
+	rebootingNodes := k8sutil.FilterNodesByAnnotation(nodelist.Items, stillRebootingSelector)
+
+	// Verify no nodes are still in the process of rebooting to avoid rebooting N > maxRebootingNodes
+	if len(rebootingNodes) >= maxRebootingNodes {
+		for _, n := range rebootingNodes {
+			glog.Infof("Found node %q still rebooting, waiting", n.Name)
+		}
+		return nil, fmt.Errorf("Found %d (of max %d) rebooting nodes; waiting for completion", len(rebootingNodes), maxRebootingNodes)
+	}
+
+	return rebootingNodes, nil
+}
+
+func (k *Kontroller) markSomeNodesRebootable(rebootableNodes []v1api.Node, remainingRebootableCount int) {
+	// Don't even bother if rebootableNodes is empty. We wouldn't do anything anyway.
 	if len(rebootableNodes) == 0 {
 		return
 	}
 
-	remainingRebootableCount := maxRebootingNodes - len(rebootingNodes)
-	// pick N of the eligible candidates to reboot
 	chosenNodes := make([]*v1api.Node, 0, remainingRebootableCount)
 	for i := 0; i < remainingRebootableCount && i < len(rebootableNodes); i++ {
 		chosenNodes = append(chosenNodes, &rebootableNodes[i])
 	}
 
+	// mark the chosen nodes as rebootable
 	glog.Infof("Found %d nodes that need a reboot", len(chosenNodes))
 	for _, node := range chosenNodes {
 		k.markNodeRebootable(node)
