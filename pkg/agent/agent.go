@@ -35,6 +35,12 @@ var (
 	}).AsSelector()
 )
 
+var (
+	shouldStayUnscheduledSelector = fields.Set(map[string]string{
+		constants.AnnotationSchedulingDisabled: constants.True,
+	}).AsSelector()
+)
+
 func New(node string) (*Klocksmith, error) {
 	// set up kubernetes in-cluster client
 	kc, err := k8sutil.GetClient("")
@@ -81,10 +87,18 @@ func (k *Klocksmith) process(stop <-chan struct{}) error {
 		return fmt.Errorf("failed to set node info: %v", err)
 	}
 
-	// we are schedulable now.
-	glog.Info("Marking node as schedulable")
-	if err := k8sutil.Unschedulable(k.nc, k.node, false); err != nil {
+	// we are schedulable now, but first ensure that this node can be schedulable
+	unschedulable, err := k8sutil.MatchNodeAnnotations(k.nc, k.node, shouldStayUnscheduledSelector)
+	if err != nil {
 		return err
+	}
+	if unschedulable {
+		glog.Info("Not altering node schedulability due to annotation")
+	} else {
+		glog.Info("Marking node as schedulable")
+		if err := k8sutil.Unschedulable(k.nc, k.node, false); err != nil {
+			return err
+		}
 	}
 
 	// set coreos.com/update1/reboot-in-progress=false and

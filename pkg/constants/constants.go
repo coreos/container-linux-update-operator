@@ -51,6 +51,12 @@ const (
 	// It is an opaque string, but might be semver.
 	AnnotationNewVersion = Prefix + "new-version"
 
+	// Key set by the administrator to mark a node as default unschedulable.
+	// Never set by the update-agent or update-operator.
+	//
+	// Prevents update-agent from marking SchedulingDisabled nodes Schedulable.
+	AnnotationSchedulingDisabled = Prefix + "scheduling-disabled"
+
 	// Key set by the update-agent to the value of "ID" in /etc/os-release.
 	LabelID = Prefix + "id"
 
