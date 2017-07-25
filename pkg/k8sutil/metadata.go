@@ -80,6 +80,16 @@ func SetNodeAnnotations(nc v1core.NodeInterface, node string, m map[string]strin
 	})
 }
 
+// MatchNodeAnnotations matches a given selector to a node's
+// annotations.
+func MatchNodeAnnotations(nc v1core.NodeInterface, node string, selector fields.Selector) (bool, error) {
+	n, err := nc.Get(node, v1meta.GetOptions{})
+	if err != nil {
+		return false, err
+	}
+	return selector.Matches(fields.Set(n.Annotations)), nil
+}
+
 // Unschedulable marks node as schedulable or unschedulable according to sched.
 func Unschedulable(nc v1core.NodeInterface, node string, sched bool) error {
 	n, err := nc.Get(node, v1meta.GetOptions{})
