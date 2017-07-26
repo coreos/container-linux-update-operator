@@ -15,6 +15,8 @@ import (
 )
 
 var (
+	beforeRebootAnnotations flagutil.StringSliceFlag
+	afterRebootAnnotations  flagutil.StringSliceFlag
 	kubeconfig              = flag.String("kubeconfig", "", "Path to a kubeconfig file. Default to the in-cluster config if not provided.")
 	analyticsEnabled        = flag.Bool("analytics", true, "Send analytics to Google Analytics")
 	autoLabelContainerLinux = flag.Bool("auto-label-container-linux", false, "Auto-label Container Linux nodes with agent=true (convenience)")
@@ -25,12 +27,16 @@ var (
 )
 
 func main() {
+	flag.Var(&beforeRebootAnnotations, "before-reboot-annotations", "List of comma-separated Kubernetes node annotations that must be set to 'true' before a reboot is allowed")
+	flag.Var(&afterRebootAnnotations, "after-reboot-annotations", "List of comma-separated Kubernetes node annotations that must be set to 'true' before a node is marked schedulable and the operator lock is released")
+
 	flag.Set("logtostderr", "true")
 	flag.Parse()
 
 	if err := flagutil.SetFlagsFromEnv(flag.CommandLine, "UPDATE_OPERATOR"); err != nil {
 		glog.Fatalf("Failed to parse environment variables: %v", err)
 	}
+
 	// respect KUBECONFIG without the prefix as well
 	if *kubeconfig == "" {
 		*kubeconfig = os.Getenv("KUBECONFIG")
@@ -61,6 +67,8 @@ func main() {
 		AutoLabelContainerLinux: *autoLabelContainerLinux,
 		ManageAgent:             *manageAgent,
 		AgentImageRepo:          *agentImageRepo,
+		BeforeRebootAnnotations: beforeRebootAnnotations,
+		AfterRebootAnnotations:  afterRebootAnnotations,
 	})
 	if err != nil {
 		glog.Fatalf("Failed to initialize %s: %v", os.Args[0], err)
