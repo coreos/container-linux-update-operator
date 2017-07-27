@@ -4,24 +4,78 @@ import (
 	"fmt"
 
 	"github.com/blang/semver"
-	"github.com/coreos/container-linux-update-operator/pkg/constants"
-	"github.com/coreos/container-linux-update-operator/pkg/version"
 	"github.com/golang/glog"
-
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
+
+	"github.com/coreos/container-linux-update-operator/pkg/constants"
+	"github.com/coreos/container-linux-update-operator/pkg/k8sutil"
+	"github.com/coreos/container-linux-update-operator/pkg/version"
 )
 
 var (
+	daemonsetName = "container-linux-update-agent-ds"
+
 	managedByOperatorLabels = map[string]string{
 		"managed-by": "container-linux-update-operator",
 		"app":        agentDefaultAppName,
 	}
 
-	daemonsetName = "container-linux-update-agent-ds"
+	// Labels nodes where update-agent should be scheduled
+	enableUpdateAgentLabel = map[string]string{
+		constants.LabelUpdateAgentEnabled: constants.True,
+	}
+
+	// Label Requirement matching nodes which lack the update agent label
+	updateAgentLabelMissing = MustRequirement(labels.NewRequirement(
+		constants.LabelUpdateAgentEnabled,
+		selection.DoesNotExist,
+		[]string{},
+	))
 )
+
+// MustRequirement wraps a call to NewRequirement and panics if the Requirment
+// cannot be created. It is intended for use in variable initializations only.
+func MustRequirement(req *labels.Requirement, err error) *labels.Requirement {
+	if err != nil {
+		panic(err)
+	}
+	return req
+}
+
+// legacyLabeler finds Container Linux nodes lacking the update-agent enabled
+// label and adds the label set "true" so nodes opt-in to running update-agent.
+//
+// Important: This behavior supports clusters which may have nodes that do not
+// have labels which an update-agent daemonset might node select upon. Even if
+// all current nodes are labeled, auto-scaling groups may create nodes lacking
+// the label. Retain this behavior to support upgrades of Tectonic clusters
+// created at 1.6.
+func (k *Kontroller) legacyLabeler() {
+	glog.V(6).Infof("Starting Container Linux node auto-labeler")
+
+	nodelist, err := k.nc.List(v1meta.ListOptions{})
+	if err != nil {
+		glog.Infof("Failed listing nodes %v", err)
+		return
+	}
+
+	// match nodes that don't have an update-agent label
+	nodesMissingLabel := k8sutil.FilterNodesByRequirement(nodelist.Items, updateAgentLabelMissing)
+	// match nodes that identify as Container Linux
+	nodesToLabel := k8sutil.FilterContainerLinuxNodes(nodesMissingLabel)
+	glog.V(6).Infof("Found Container Linux nodes to label: %+v", nodelist.Items)
+
+	for _, node := range nodesToLabel {
+		glog.Infof("Setting label 'agent=true' on %q", node.Name)
+		if err := k8sutil.SetNodeLabels(k.nc, node.Name, enableUpdateAgentLabel); err != nil {
+			glog.Errorf("Failed setting label 'agent=true' on %q", node.Name)
+		}
+	}
+}
 
 // updateAgent updates the agent on nodes if necessary.
 //

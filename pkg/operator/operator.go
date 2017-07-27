@@ -86,6 +86,9 @@ type Kontroller struct {
 	// It will be set to the namespace the operator is running in automatically.
 	namespace string
 
+	// auto-label Container Linux nodes for migration compatability
+	autoLabelContainerLinux bool
+
 	// Deprecated
 	manageAgent    bool
 	agentImageRepo string
@@ -94,7 +97,10 @@ type Kontroller struct {
 // Config configures a Kontroller.
 type Config struct {
 	// Kubernetesc client
-	Client         kubernetes.Interface
+	Client kubernetes.Interface
+	// migration compatability
+	AutoLabelContainerLinux bool
+	// Deprecated
 	ManageAgent    bool
 	AgentImageRepo string
 }
@@ -137,7 +143,7 @@ func New(config Config) (*Kontroller, error) {
 		return nil, fmt.Errorf("unable to determine operator namespace: please ensure POD_NAMESPACE environment variable is set")
 	}
 
-	return &Kontroller{kc, nc, er, leaderElectionClient, leaderElectionEventRecorder, namespace, config.ManageAgent, config.AgentImageRepo}, nil
+	return &Kontroller{kc, nc, er, leaderElectionClient, leaderElectionEventRecorder, namespace, config.AutoLabelContainerLinux, config.ManageAgent, config.AgentImageRepo}, nil
 }
 
 // Run starts the operator reconcilitation proces and runs until the stop
@@ -148,9 +154,15 @@ func (k *Kontroller) Run(stop <-chan struct{}) error {
 		return err
 	}
 
+	// start Container Linux node auto-labeler
+	if k.autoLabelContainerLinux {
+		go wait.Until(k.legacyLabeler, reconciliationPeriod, stop)
+	}
+
 	// Before doing anytihng else, make sure the associated agent daemonset is
 	// ready if it's our responsibility.
 	if k.manageAgent && k.agentImageRepo != "" {
+		// create or update the update-agent daemonset
 		err := k.runDaemonsetUpdate(k.agentImageRepo)
 		if err != nil {
 			glog.Errorf("unable to ensure managed agents are ready: %v", err)

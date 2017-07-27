@@ -15,9 +15,10 @@ import (
 )
 
 var (
-	kubeconfig       = flag.String("kubeconfig", "", "Path to a kubeconfig file. Default to the in-cluster config if not provided.")
-	analyticsEnabled = flag.Bool("analytics", true, "Send analytics to Google Analytics")
-	printVersion     = flag.Bool("version", false, "Print version and exit")
+	kubeconfig              = flag.String("kubeconfig", "", "Path to a kubeconfig file. Default to the in-cluster config if not provided.")
+	analyticsEnabled        = flag.Bool("analytics", true, "Send analytics to Google Analytics")
+	autoLabelContainerLinux = flag.Bool("auto-label-container-linux", false, "Auto-label Container Linux nodes with agent=true (convenience)")
+	printVersion            = flag.Bool("version", false, "Print version and exit")
 	// deprecated
 	manageAgent    = flag.Bool("manage-agent", false, "Manage the associated update-agent")
 	agentImageRepo = flag.String("agent-image-repo", "quay.io/coreos/container-linux-update-operator", "The image to use for the managed agent, without version tag")
@@ -56,9 +57,10 @@ func main() {
 
 	// update-operator
 	o, err := operator.New(operator.Config{
-		Client:         client,
-		ManageAgent:    *manageAgent,
-		AgentImageRepo: *agentImageRepo,
+		Client:                  client,
+		AutoLabelContainerLinux: *autoLabelContainerLinux,
+		ManageAgent:             *manageAgent,
+		AgentImageRepo:          *agentImageRepo,
 	})
 	if err != nil {
 		glog.Fatalf("Failed to initialize %s: %v", os.Args[0], err)
