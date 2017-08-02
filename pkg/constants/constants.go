@@ -63,7 +63,8 @@ const (
 	LabelVersion = Prefix + "version"
 
 	// Label set to "true" on nodes where update-agent pods should be scheduled.
-	// This applies only when update-operator is run with manage-agent=true.
+	// This applies only when update-operator is run with the flag
+	// auto-label-container-linux=true
 	LabelUpdateAgentEnabled = Prefix + "agent"
 
 	// AgentVersion is the key used to indicate the
