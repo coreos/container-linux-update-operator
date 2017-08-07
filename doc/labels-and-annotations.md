@@ -12,6 +12,8 @@ A few labels may be set directly by admins to customize behavior. These are call
 |-------|------------|--------|---------------|
 | agent | true/false | admin, update-operator | When the `auto-label-container-linux` compatability mode is enabled (via flag), the `update-operator` sets agent true on Container Linux nodes. This is a convenient label that users may node selector upon, if desired. |
 | reboot-paused  | true/false | admin | May be set to true by an admin so the `update-operator` will ignore a node. Note that CLUO only coordinates reboots, `update_engine` still installs updates which are applied when a node reboots (e.g. powerloss). |
+| before-reboot | true | update-operator | The `update-operator` sets the `before-reboot` label when a machine want to reboot. It signifies that the before-reboot checks should run on the node, if there are any. |
+| after-reboot | true | update-operator | The `update-operator` sets the `after-reboot` label when a machine has completed it's reboot. It signifies that the after-reboot checks should run on the node, if there are any. |
 
 **Annotations**
 
