@@ -80,6 +80,24 @@ func SetNodeAnnotations(nc v1core.NodeInterface, node string, m map[string]strin
 	})
 }
 
+// DeleteNodeLabels deletes all keys in ks
+func DeleteNodeLabels(nc v1core.NodeInterface, node string, ks []string) error {
+	return UpdateNodeRetry(nc, node, func(n *v1api.Node) {
+		for _, k := range ks {
+			delete(n.Labels, k)
+		}
+	})
+}
+
+// DeleteNodeAnnotations deletes all annotations with keys in ks
+func DeleteNodeAnnotations(nc v1core.NodeInterface, node string, ks []string) error {
+	return UpdateNodeRetry(nc, node, func(n *v1api.Node) {
+		for _, k := range ks {
+			delete(n.Annotations, k)
+		}
+	})
+}
+
 // Unschedulable marks node as schedulable or unschedulable according to sched.
 func Unschedulable(nc v1core.NodeInterface, node string, sched bool) error {
 	n, err := nc.Get(node, v1meta.GetOptions{})

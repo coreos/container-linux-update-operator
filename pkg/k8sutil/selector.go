@@ -5,8 +5,19 @@ import (
 
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/selection"
 	v1api "k8s.io/client-go/pkg/api/v1"
 )
+
+// NewRequirementOrDie wraps a call to NewRequirement and panics if the Requirment
+// cannot be created. It is intended for use in variable initializations only.
+func NewRequirementOrDie(key string, op selection.Operator, vals []string) *labels.Requirement {
+	req, err := labels.NewRequirement(key, op, vals)
+	if err != nil {
+		panic(err)
+	}
+	return req
+}
 
 // FilterNodesByAnnotation takes a node list and a field selector, and returns
 // a node list that matches the field selector.

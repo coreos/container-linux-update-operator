@@ -30,21 +30,12 @@ var (
 	}
 
 	// Label Requirement matching nodes which lack the update agent label
-	updateAgentLabelMissing = MustRequirement(labels.NewRequirement(
+	updateAgentLabelMissing = k8sutil.NewRequirementOrDie(
 		constants.LabelUpdateAgentEnabled,
 		selection.DoesNotExist,
 		[]string{},
-	))
+	)
 )
-
-// MustRequirement wraps a call to NewRequirement and panics if the Requirment
-// cannot be created. It is intended for use in variable initializations only.
-func MustRequirement(req *labels.Requirement, err error) *labels.Requirement {
-	if err != nil {
-		panic(err)
-	}
-	return req
-}
 
 // legacyLabeler finds Container Linux nodes lacking the update-agent enabled
 // label and adds the label set "true" so nodes opt-in to running update-agent.

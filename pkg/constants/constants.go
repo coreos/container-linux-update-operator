@@ -51,6 +51,11 @@ const (
 	// It is an opaque string, but might be semver.
 	AnnotationNewVersion = Prefix + "new-version"
 
+	// Keys set to true when the operator is waiting for configured annotation
+	// before and after the reboot repectively
+	LabelBeforeReboot = Prefix + "before-reboot"
+	LabelAfterReboot  = Prefix + "after-reboot"
+
 	// Key set by the update-agent to the value of "ID" in /etc/os-release.
 	LabelID = Prefix + "id"
 

@@ -81,12 +81,6 @@ func (k *Klocksmith) process(stop <-chan struct{}) error {
 		return fmt.Errorf("failed to set node info: %v", err)
 	}
 
-	// we are schedulable now.
-	glog.Info("Marking node as schedulable")
-	if err := k8sutil.Unschedulable(k.nc, k.node, false); err != nil {
-		return err
-	}
-
 	// set coreos.com/update1/reboot-in-progress=false and
 	// coreos.com/update1/reboot-needed=false
 	anno := map[string]string{
@@ -100,6 +94,12 @@ func (k *Klocksmith) process(stop <-chan struct{}) error {
 	// Since we set 'reboot-needed=false', 'ok-to-reboot' should clear.
 	// Wait for it to do so, else we might start reboot-looping
 	if err := k.waitForNotOkToReboot(); err != nil {
+		return err
+	}
+
+	// we are schedulable now.
+	glog.Info("Marking node as schedulable")
+	if err := k8sutil.Unschedulable(k.nc, k.node, false); err != nil {
 		return err
 	}
 
