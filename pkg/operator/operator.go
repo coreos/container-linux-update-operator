@@ -514,7 +514,7 @@ func (k *Kontroller) markAfterReboot() error {
 	// also filter out any nodes that are already labeled with after-reboot=true
 	justRebootedNodes = k8sutil.FilterNodesByRequirement(justRebootedNodes, notAfterRebootReq)
 
-	glog.Infof("Found %d rebooted nodes, setting label %q to %q", len(justRebootedNodes), constants.LabelAfterReboot, constants.True)
+	glog.Infof("Found %d rebooted nodes", len(justRebootedNodes))
 
 	// for all the nodes which just rebooted, remove any old annotations and add the after-reboot=true label
 	for _, n := range justRebootedNodes {
