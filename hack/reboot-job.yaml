@@ -1,0 +1,27 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: reboot-container-linux
+spec:
+  template:
+    metadata:
+      name: reboot-container-linux
+    spec:
+      nodeSelector:
+        alpha.coreos.com/update1.test-reboot: true
+      containers:
+      - name: reboot-container-linux
+        image: alpine:3.4
+        command:
+        - /bin/sh
+        - -c
+        - "apk -U add dbus && dbus-send --system /com/coreos/update1 com.coreos.update1.Manager.StatusUpdate int64:0 double:0 string:'UPDATE_STATUS_UPDATED_NEED_REBOOT' string:'' int64:0"
+        volumeMounts:
+          - mountPath: /var/run/dbus
+            name: var-run-dbus
+      volumes:
+      - name: var-run-dbus
+        hostPath:
+          path: /var/run/dbus
+      restartPolicy: Never
+
