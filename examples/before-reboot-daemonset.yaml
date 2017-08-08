@@ -1,0 +1,29 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: example-before-reboot-check
+  namespace: kube-system
+spec:
+  template:
+    metadata:
+      labels:
+        app: example-before-reboot-check
+    spec:
+      nodeSelector:
+        container-linux-update.v1.coreos.com/before-reboot: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
+      containers:
+      - name: example-before-reboot-check
+        image: quay.io/stephen_demos/kube-annotate:latest
+        command:
+        - "/bin/kube-annotate"
+        - "container-linux-update.v1.coreos.com/before-reboot-test"
+        - "true"
+        env:
+        - name: NODE
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
