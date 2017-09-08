@@ -488,7 +488,7 @@ func (k *Kontroller) markBeforeReboot() error {
 			return fmt.Errorf("Failed to label node for before reboot checks: %v", err)
 		}
 		if len(k.beforeRebootAnnotations) > 0 {
-			glog.Infof("Waiting for before-reboot annotations on node %q: %v", n.Name, k.afterRebootAnnotations)
+			glog.Infof("Waiting for before-reboot annotations on node %q: %v", n.Name, k.beforeRebootAnnotations)
 		}
 	}
 
