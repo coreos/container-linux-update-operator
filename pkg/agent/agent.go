@@ -149,7 +149,7 @@ func (k *Klocksmith) process(stop <-chan struct{}) error {
 	// TODO(mischief): explicitly don't terminate self? we'll probably just be a
 	// mirror pod or daemonset anyway..
 	glog.Infof("Deleting %d pods", len(pods))
-	deleteOptions := v1meta.NewDeleteOptions(30)
+	deleteOptions := &v1meta.DeleteOptions{}
 	for _, pod := range pods {
 		glog.Infof("Terminating pod %q...", pod.Name)
 		if err := k.kc.CoreV1().Pods(pod.Namespace).Delete(pod.Name, deleteOptions); err != nil {
