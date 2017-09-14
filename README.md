@@ -40,7 +40,7 @@ Create the `update-operator` deployment and `update-agent` daemonset.
 
 ```
 kubectl create -f examples/update-operator.yaml
-kubectl create -f example/update-agent.yaml
+kubectl create -f examples/update-agent.yaml
 ```
 
 ## Test
