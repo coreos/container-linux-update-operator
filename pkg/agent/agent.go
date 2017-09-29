@@ -7,6 +7,7 @@ import (
 	"github.com/coreos/go-systemd/login1"
 	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -155,6 +156,15 @@ func (k *Klocksmith) process(stop <-chan struct{}) error {
 		if err := k.kc.CoreV1().Pods(pod.Namespace).Delete(pod.Name, deleteOptions); err != nil {
 			glog.Errorf("failed terminating pod %q: %v", pod.Name, err)
 			// Continue anyways, the reboot should terminate it
+		}
+	}
+
+	for _, pod := range pods {
+		glog.Infof("Waiting for pod %q to terminate", pod.Name)
+		if err := k.waitForPodDeletion(pod); err != nil {
+			glog.Errorf("failed waiting for pod %q to terminate: %v", pod.Name, err)
+		} else {
+			glog.Infof("Pod %q terminated", pod.Name)
 		}
 	}
 
@@ -345,6 +355,20 @@ func (k *Klocksmith) getPodsForDeletion() ([]v1.Pod, error) {
 	})
 
 	return pods, nil
+}
+
+// waitForPodDeletion waits for a pod to be deleted
+func (k *Klocksmith) waitForPodDeletion(pod v1.Pod) error {
+	return wait.PollInfinite(time.Second, func() (bool, error) {
+		switch _, err := k.kc.CoreV1().Pods(pod.Namespace).Get(pod.Name, v1meta.GetOptions{}); {
+		case err == nil:
+			return false, nil
+		case errors.IsNotFound(err):
+			return true, nil
+		default:
+			return false, err
+		}
+	})
 }
 
 // sleepOrDone pauses the current goroutine until the done channel receives
