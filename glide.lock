@@ -1,5 +1,5 @@
-hash: 5f259c6c01bb802851ec3edec8a481d8548e7c56e5dfb50cd3daae99d25ca5bd
-updated: 2017-07-20T15:01:02.765904808-07:00
+hash: 0ec5f247526f93eef46a064dd4ffbd9a058d927770448a38aba5ae090ce046aa
+updated: 2017-10-05T15:01:26.54476404-07:00
 imports:
 - name: github.com/blang/semver
   version: 31b736133b98f26d5e078ec9eb591666edfd091f
@@ -157,7 +157,7 @@ imports:
   - third_party/forked/golang/json
   - third_party/forked/golang/reflect
 - name: k8s.io/client-go
-  version: 3627aeb7d4f6ade38f995d2c923e459146493c7e
+  version: 21300e3e11c918b8e6a70fb7293b310683d6c046
   subpackages:
   - discovery
   - kubernetes
