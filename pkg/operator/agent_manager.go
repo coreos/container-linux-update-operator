@@ -5,11 +5,11 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/golang/glog"
+	"k8s.io/api/core/v1"
+	"k8s.io/api/extensions/v1beta1"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
-	"k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 
 	"github.com/coreos/container-linux-update-operator/pkg/constants"
 	"github.com/coreos/container-linux-update-operator/pkg/k8sutil"

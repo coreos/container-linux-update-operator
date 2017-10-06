@@ -5,10 +5,10 @@ package mock_v1
 
 import (
 	gomock "github.com/golang/mock/gomock"
+	v10 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
-	v10 "k8s.io/client-go/pkg/api/v1"
 )
 
 // Mock of NodeInterface interface
