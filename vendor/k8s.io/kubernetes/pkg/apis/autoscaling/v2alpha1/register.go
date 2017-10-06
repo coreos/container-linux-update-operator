@@ -17,8 +17,7 @@ limitations under the License.
 package v2alpha1
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	autoscalingv2alpha1 "k8s.io/api/autoscaling/v2alpha1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -28,17 +27,19 @@ const GroupName = "autoscaling"
 // SchemeGroupVersion is group version used to register these objects
 var SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: "v2alpha1"}
 
+// Resource takes an unqualified resource and returns a Group qualified GroupResource
+func Resource(resource string) schema.GroupResource {
+	return SchemeGroupVersion.WithResource(resource).GroupResource()
+}
+
 var (
-	SchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes, addDefaultingFuncs)
-	AddToScheme   = SchemeBuilder.AddToScheme
+	localSchemeBuilder = &autoscalingv2alpha1.SchemeBuilder
+	AddToScheme        = localSchemeBuilder.AddToScheme
 )
 
-// Adds the list of known types to api.Scheme.
-func addKnownTypes(scheme *runtime.Scheme) error {
-	scheme.AddKnownTypes(SchemeGroupVersion,
-		&HorizontalPodAutoscaler{},
-		&HorizontalPodAutoscalerList{},
-	)
-	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
-	return nil
+func init() {
+	// We only register manually written functions here. The registration of the
+	// generated functions takes place in the generated files. The separation
+	// makes the code compile even when the generated files are missing.
+	localSchemeBuilder.Register(addDefaultingFuncs)
 }

@@ -19,14 +19,14 @@ package types
 import (
 	"fmt"
 
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeapi "k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/v1"
 )
 
 const (
 	ConfigSourceAnnotationKey    = "kubernetes.io/config.source"
-	ConfigMirrorAnnotationKey    = "kubernetes.io/config.mirror"
+	ConfigMirrorAnnotationKey    = v1.MirrorPodAnnotationKey
 	ConfigFirstSeenAnnotationKey = "kubernetes.io/config.seen"
 	ConfigHashAnnotationKey      = "kubernetes.io/config.hash"
 	CriticalPodAnnotationKey     = "scheduler.alpha.kubernetes.io/critical-pod"
