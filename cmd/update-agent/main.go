@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/coreos/pkg/flagutil"
 	"github.com/golang/glog"
@@ -15,6 +16,7 @@ import (
 var (
 	node         = flag.String("node", "", "Kubernetes node name")
 	printVersion = flag.Bool("version", false, "Print version and exit")
+	reapTimeout  = flag.Int("grace-period", 600, "Period of time in seconds given to a pod to terminate when rebooting for an update")
 )
 
 func main() {
@@ -34,7 +36,8 @@ func main() {
 		glog.Fatal("-node is required")
 	}
 
-	a, err := agent.New(*node)
+	rt := time.Duration(*reapTimeout) * time.Second
+	a, err := agent.New(*node, rt)
 	if err != nil {
 		glog.Fatalf("Failed to initialize %s: %v", os.Args[0], err)
 	}

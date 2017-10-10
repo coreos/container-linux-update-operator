@@ -27,7 +27,11 @@ type Klocksmith struct {
 	nc   v1core.NodeInterface
 	ue   *updateengine.Client
 	lc   *login1.Conn
+	ri   time.Duration
+	rt   time.Duration
 }
+
+const reapInterval = 10 * time.Second
 
 var (
 	shouldRebootSelector = fields.Set(map[string]string{
@@ -36,7 +40,7 @@ var (
 	}).AsSelector()
 )
 
-func New(node string) (*Klocksmith, error) {
+func New(node string, reapTimeout time.Duration) (*Klocksmith, error) {
 	// set up kubernetes in-cluster client
 	kc, err := k8sutil.GetClient("")
 	if err != nil {
@@ -58,7 +62,7 @@ func New(node string) (*Klocksmith, error) {
 		return nil, fmt.Errorf("error establishing connection to logind dbus: %v", err)
 	}
 
-	return &Klocksmith{node, kc, nc, ue, lc}, nil
+	return &Klocksmith{node, kc, nc, ue, lc, reapInterval, reapTimeout}, nil
 }
 
 // Run starts the agent to listen for an update_engine reboot signal and react
@@ -359,7 +363,7 @@ func (k *Klocksmith) getPodsForDeletion() ([]v1.Pod, error) {
 
 // waitForPodDeletion waits for a pod to be deleted
 func (k *Klocksmith) waitForPodDeletion(pod v1.Pod) error {
-	return wait.PollInfinite(time.Second, func() (bool, error) {
+	return wait.PollImmediate(k.ri, k.rt, func() (bool, error) {
 		switch _, err := k.kc.CoreV1().Pods(pod.Namespace).Get(pod.Name, v1meta.GetOptions{}); {
 		case err == nil:
 			return false, nil
