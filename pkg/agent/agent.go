@@ -166,9 +166,7 @@ func (k *Klocksmith) process(stop <-chan struct{}) error {
 	for _, pod := range pods {
 		glog.Infof("Waiting for pod %q to terminate", pod.Name)
 		if err := k.waitForPodDeletion(pod); err != nil {
-			glog.Errorf("failed waiting for pod %q to terminate: %v", pod.Name, err)
-		} else {
-			glog.Infof("Pod %q terminated", pod.Name)
+			glog.Errorf("Skipping wait on pod %q: %v", pod.Name, err)
 		}
 	}
 
@@ -364,14 +362,19 @@ func (k *Klocksmith) getPodsForDeletion() ([]v1.Pod, error) {
 // waitForPodDeletion waits for a pod to be deleted
 func (k *Klocksmith) waitForPodDeletion(pod v1.Pod) error {
 	return wait.PollImmediate(k.ri, k.rt, func() (bool, error) {
-		switch _, err := k.kc.CoreV1().Pods(pod.Namespace).Get(pod.Name, v1meta.GetOptions{}); {
-		case err == nil:
-			return false, nil
-		case errors.IsNotFound(err):
+		_, err := k.kc.CoreV1().Pods(pod.Namespace).Get(pod.Name, v1meta.GetOptions{})
+		if errors.IsNotFound(err) {
+			glog.Infof("Deleted pod %q", pod.Name)
 			return true, nil
-		default:
-			return false, err
 		}
+
+		// most errors will be transient. log the error and continue
+		// polling
+		if err != nil {
+			glog.Errorf("Failed to get pod %q: %v", pod.Name, err)
+		}
+
+		return false, nil
 	})
 }
 
