@@ -35,6 +35,7 @@ rules:
       - pods
     verbs:
       - list
+      - get
       - delete      
   - apiGroups:
       - "extensions"
