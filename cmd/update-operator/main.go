@@ -8,7 +8,6 @@ import (
 	"github.com/coreos/pkg/flagutil"
 	"github.com/golang/glog"
 
-	"github.com/coreos/container-linux-update-operator/pkg/analytics"
 	"github.com/coreos/container-linux-update-operator/pkg/k8sutil"
 	"github.com/coreos/container-linux-update-operator/pkg/operator"
 	"github.com/coreos/container-linux-update-operator/pkg/version"
@@ -18,7 +17,6 @@ var (
 	beforeRebootAnnotations flagutil.StringSliceFlag
 	afterRebootAnnotations  flagutil.StringSliceFlag
 	kubeconfig              = flag.String("kubeconfig", "", "Path to a kubeconfig file. Default to the in-cluster config if not provided.")
-	analyticsEnabled        = flag.Bool("analytics", true, "Send analytics to Google Analytics")
 	autoLabelContainerLinux = flag.Bool("auto-label-container-linux", false, "Auto-label Container Linux nodes with agent=true (convenience)")
 	printVersion            = flag.Bool("version", false, "Print version and exit")
 	// deprecated
@@ -47,10 +45,6 @@ func main() {
 		os.Exit(0)
 	}
 
-	if *analyticsEnabled {
-		analytics.Enable()
-	}
-
 	if *manageAgent {
 		glog.Warning("Use of -manage-agent=true is deprecated and will be removed in the future")
 	}
@@ -75,8 +69,6 @@ func main() {
 	}
 
 	glog.Infof("%s running", os.Args[0])
-
-	analytics.ControllerStarted()
 
 	// Run operator until the stop channel is closed
 	stop := make(chan struct{})
