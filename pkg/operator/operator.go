@@ -6,22 +6,18 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	v1api "k8s.io/api/core/v1"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	v1core "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/client-go/pkg/api"
-	v1api "k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/leaderelection"
+	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
-
-	// These should be replaced with client-go equivilents when available
-	kapi "k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/client/clientset_generated/clientset"
-	kleaderelection "k8s.io/kubernetes/pkg/client/leaderelection"
-	kresourcelock "k8s.io/kubernetes/pkg/client/leaderelection/resourcelock"
 
 	"github.com/coreos/container-linux-update-operator/pkg/constants"
 	"github.com/coreos/container-linux-update-operator/pkg/k8sutil"
@@ -96,7 +92,7 @@ type Kontroller struct {
 	beforeRebootAnnotations []string
 	afterRebootAnnotations  []string
 
-	leaderElectionClient        clientset.Interface
+	leaderElectionClient        *kubernetes.Clientset
 	leaderElectionEventRecorder record.EventRecorder
 	// namespace is the kubernetes namespace any resources (e.g. locks,
 	// configmaps, agents) should be created and read under.
@@ -139,13 +135,13 @@ func New(config Config) (*Kontroller, error) {
 	// create event emitter
 	broadcaster := record.NewBroadcaster()
 	broadcaster.StartRecordingToSink(&v1core.EventSinkImpl{Interface: kc.CoreV1().Events("")})
-	er := broadcaster.NewRecorder(api.Scheme, v1api.EventSource{Component: eventSourceComponent})
+	er := broadcaster.NewRecorder(runtime.NewScheme(), v1api.EventSource{Component: eventSourceComponent})
 
 	leaderElectionClientConfig, err := rest.InClusterConfig()
 	if err != nil {
 		return nil, fmt.Errorf("error creating leader election client config: %v", err)
 	}
-	leaderElectionClient, err := clientset.NewForConfig(leaderElectionClientConfig)
+	leaderElectionClient, err := kubernetes.NewForConfig(leaderElectionClientConfig)
 	if err != nil {
 		return nil, fmt.Errorf("error creating leader election client: %v", err)
 	}
@@ -154,7 +150,7 @@ func New(config Config) (*Kontroller, error) {
 	leaderElectionBroadcaster.StartRecordingToSink(&v1core.EventSinkImpl{
 		Interface: v1core.New(leaderElectionClient.Core().RESTClient()).Events(""),
 	})
-	leaderElectionEventRecorder := leaderElectionBroadcaster.NewRecorder(kapi.Scheme, v1api.EventSource{
+	leaderElectionEventRecorder := leaderElectionBroadcaster.NewRecorder(runtime.NewScheme(), v1api.EventSource{
 		Component: leaderElectionEventSourceComponent,
 	})
 
@@ -223,19 +219,13 @@ func (k *Kontroller) withLeaderElection() error {
 		return err
 	}
 
-	// TODO(euank): this should not use an endpoint due to performance reasons.
-	// See https://github.com/kubernetes/client-go/issues/28#issuecomment-284032220
-	// Currently, every controller/operator uses an endpoint, so we are not alone
-	// in this
-	// Once https://github.com/kubernetes/kubernetes/pull/42666 is merged, update
-	// to use that. There will be version-cross-compatibility-dragons.
-	resLock := &kresourcelock.EndpointsLock{
-		EndpointsMeta: v1meta.ObjectMeta{
+	resLock := &resourcelock.ConfigMapLock{
+		ConfigMapMeta: v1meta.ObjectMeta{
 			Namespace: k.namespace,
 			Name:      leaderElectionResourceName,
 		},
 		Client: k.leaderElectionClient,
-		LockConfig: kresourcelock.ResourceLockConfig{
+		LockConfig: resourcelock.ResourceLockConfig{
 			Identity:      id,
 			EventRecorder: k.leaderElectionEventRecorder,
 		},
@@ -248,12 +238,12 @@ func (k *Kontroller) withLeaderElection() error {
 		// and the KVO values
 		// See also
 		// https://github.com/kubernetes/kubernetes/blob/fc31dae165f406026142f0dd9a98cada8474682a/pkg/client/leaderelection/leaderelection.go#L17
-		kleaderelection.RunOrDie(kleaderelection.LeaderElectionConfig{
+		leaderelection.RunOrDie(leaderelection.LeaderElectionConfig{
 			Lock:          resLock,
 			LeaseDuration: leaderElectionLease,
 			RenewDeadline: leaderElectionLease * 2 / 3,
 			RetryPeriod:   leaderElectionLease / 3,
-			Callbacks: kleaderelection.LeaderCallbacks{
+			Callbacks: leaderelection.LeaderCallbacks{
 				OnStartedLeading: func(stop <-chan struct{}) {
 					glog.V(5).Info("started leading")
 					waitLeading <- struct{}{}

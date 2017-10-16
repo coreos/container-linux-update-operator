@@ -1,7 +1,7 @@
 package k8sutil
 
 import (
-	v1api "k8s.io/client-go/pkg/api/v1"
+	v1api "k8s.io/api/core/v1"
 )
 
 func FilterPods(pods []v1api.Pod, filter func(*v1api.Pod) bool) (newpods []v1api.Pod) {
