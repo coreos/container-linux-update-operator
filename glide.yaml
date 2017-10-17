@@ -57,8 +57,6 @@ import:
   version: bf9dde6d0d2c004a008c27aaee91170c786f6db8
 - package: github.com/imdario/mergo
   version: 6633656539c1639d9d78127b7d47c622b5d7b6dc
-- package: github.com/jpillora/go-ogle-analytics
-  version: 14b04e0594ef6a9fd943363b135656f0ec8c9d0e
 - package: github.com/juju/ratelimit
   version: 5b9ff866471762aa2ab2dced63c9fb6f53921342
 - package: github.com/mailru/easyjson

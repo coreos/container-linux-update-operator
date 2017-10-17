@@ -1,5 +1,5 @@
-hash: 1aa60b2ea0fe670688c9236885b632b537e279cef06593c27c7d5550ff62a01e
-updated: 2017-10-06T11:39:15.509692856-07:00
+hash: d4edf4f18313a1b63143d0aac9e32cf705b4a7e891061ec30b21bfb5bc67de73
+updated: 2017-10-17T11:38:24.938456123-07:00
 imports:
 - name: github.com/blang/semver
   version: 31b736133b98f26d5e078ec9eb591666edfd091f
@@ -74,8 +74,6 @@ imports:
   version: bf9dde6d0d2c004a008c27aaee91170c786f6db8
 - name: github.com/imdario/mergo
   version: 6633656539c1639d9d78127b7d47c622b5d7b6dc
-- name: github.com/jpillora/go-ogle-analytics
-  version: 14b04e0594ef6a9fd943363b135656f0ec8c9d0e
 - name: github.com/juju/ratelimit
   version: 5b9ff866471762aa2ab2dced63c9fb6f53921342
 - name: github.com/mailru/easyjson
