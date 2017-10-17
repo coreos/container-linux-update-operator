@@ -7,6 +7,7 @@ import (
 	"github.com/coreos/go-systemd/login1"
 	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -21,12 +22,15 @@ import (
 )
 
 type Klocksmith struct {
-	node string
-	kc   kubernetes.Interface
-	nc   v1core.NodeInterface
-	ue   *updateengine.Client
-	lc   *login1.Conn
+	node        string
+	kc          kubernetes.Interface
+	nc          v1core.NodeInterface
+	ue          *updateengine.Client
+	lc          *login1.Conn
+	reapTimeout time.Duration
 }
+
+const defaultPollInterval = 10 * time.Second
 
 var (
 	shouldRebootSelector = fields.Set(map[string]string{
@@ -35,7 +39,7 @@ var (
 	}).AsSelector()
 )
 
-func New(node string) (*Klocksmith, error) {
+func New(node string, reapTimeout time.Duration) (*Klocksmith, error) {
 	// set up kubernetes in-cluster client
 	kc, err := k8sutil.GetClient("")
 	if err != nil {
@@ -57,7 +61,7 @@ func New(node string) (*Klocksmith, error) {
 		return nil, fmt.Errorf("error establishing connection to logind dbus: %v", err)
 	}
 
-	return &Klocksmith{node, kc, nc, ue, lc}, nil
+	return &Klocksmith{node, kc, nc, ue, lc, reapTimeout}, nil
 }
 
 // Run starts the agent to listen for an update_engine reboot signal and react
@@ -158,6 +162,13 @@ func (k *Klocksmith) process(stop <-chan struct{}) error {
 		}
 	}
 
+	for _, pod := range pods {
+		glog.Infof("Waiting for pod %q to terminate", pod.Name)
+		if err := k.waitForPodDeletion(pod); err != nil {
+			glog.Errorf("Skipping wait on pod %q: %v", pod.Name, err)
+		}
+	}
+
 	glog.Info("Node drained, rebooting")
 
 	// reboot
@@ -186,7 +197,7 @@ func (k *Klocksmith) updateStatusCallback(s updateengine.Status) {
 		anno[constants.AnnotationRebootNeeded] = constants.True
 	}
 
-	wait.PollUntil(10*time.Second, func() (bool, error) {
+	wait.PollUntil(defaultPollInterval, func() (bool, error) {
 		if err := k8sutil.SetNodeAnnotations(k.nc, k.node, anno); err != nil {
 			glog.Errorf("Failed to set annotation %q: %v", constants.AnnotationStatus, err)
 			return false, nil
@@ -345,6 +356,25 @@ func (k *Klocksmith) getPodsForDeletion() ([]v1.Pod, error) {
 	})
 
 	return pods, nil
+}
+
+// waitForPodDeletion waits for a pod to be deleted
+func (k *Klocksmith) waitForPodDeletion(pod v1.Pod) error {
+	return wait.PollImmediate(defaultPollInterval, k.reapTimeout, func() (bool, error) {
+		_, err := k.kc.CoreV1().Pods(pod.Namespace).Get(pod.Name, v1meta.GetOptions{})
+		if errors.IsNotFound(err) {
+			glog.Infof("Deleted pod %q", pod.Name)
+			return true, nil
+		}
+
+		// most errors will be transient. log the error and continue
+		// polling
+		if err != nil {
+			glog.Errorf("Failed to get pod %q: %v", pod.Name, err)
+		}
+
+		return false, nil
+	})
 }
 
 // sleepOrDone pauses the current goroutine until the done channel receives
