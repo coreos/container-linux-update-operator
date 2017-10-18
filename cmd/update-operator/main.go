@@ -4,11 +4,11 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/coreos/pkg/flagutil"
 	"github.com/golang/glog"
 
-	"github.com/coreos/container-linux-update-operator/pkg/analytics"
 	"github.com/coreos/container-linux-update-operator/pkg/k8sutil"
 	"github.com/coreos/container-linux-update-operator/pkg/operator"
 	"github.com/coreos/container-linux-update-operator/pkg/version"
@@ -18,23 +18,28 @@ var (
 	beforeRebootAnnotations flagutil.StringSliceFlag
 	afterRebootAnnotations  flagutil.StringSliceFlag
 	kubeconfig              = flag.String("kubeconfig", "", "Path to a kubeconfig file. Default to the in-cluster config if not provided.")
-	analyticsEnabled        = flag.Bool("analytics", true, "Send analytics to Google Analytics")
 	autoLabelContainerLinux = flag.Bool("auto-label-container-linux", false, "Auto-label Container Linux nodes with agent=true (convenience)")
 	printVersion            = flag.Bool("version", false, "Print version and exit")
 	// deprecated
-	manageAgent    = flag.Bool("manage-agent", false, "Manage the associated update-agent")
-	agentImageRepo = flag.String("agent-image-repo", "quay.io/coreos/container-linux-update-operator", "The image to use for the managed agent, without version tag")
+	analyticsEnabled optValue
+	manageAgent      = flag.Bool("manage-agent", false, "Manage the associated update-agent")
+	agentImageRepo   = flag.String("agent-image-repo", "quay.io/coreos/container-linux-update-operator", "The image to use for the managed agent, without version tag")
 )
 
 func main() {
 	flag.Var(&beforeRebootAnnotations, "before-reboot-annotations", "List of comma-separated Kubernetes node annotations that must be set to 'true' before a reboot is allowed")
 	flag.Var(&afterRebootAnnotations, "after-reboot-annotations", "List of comma-separated Kubernetes node annotations that must be set to 'true' before a node is marked schedulable and the operator lock is released")
+	flag.Var(&analyticsEnabled, "analytics", "Send analytics to Google Analytics")
 
 	flag.Set("logtostderr", "true")
 	flag.Parse()
 
 	if err := flagutil.SetFlagsFromEnv(flag.CommandLine, "UPDATE_OPERATOR"); err != nil {
 		glog.Fatalf("Failed to parse environment variables: %v", err)
+	}
+
+	if analyticsEnabled.present {
+		glog.Warning("Use of -analytics is deprecated and will be removed. Google Analytics will not be enabled.")
 	}
 
 	// respect KUBECONFIG without the prefix as well
@@ -45,10 +50,6 @@ func main() {
 	if *printVersion {
 		fmt.Println(version.Format())
 		os.Exit(0)
-	}
-
-	if *analyticsEnabled {
-		analytics.Enable()
 	}
 
 	if *manageAgent {
@@ -76,8 +77,6 @@ func main() {
 
 	glog.Infof("%s running", os.Args[0])
 
-	analytics.ControllerStarted()
-
 	// Run operator until the stop channel is closed
 	stop := make(chan struct{})
 	defer close(stop)
@@ -85,4 +84,21 @@ func main() {
 	if err := o.Run(stop); err != nil {
 		glog.Fatalf("Error while running %s: %v", os.Args[0], err)
 	}
+}
+
+// optValue is a flag.Value that detects whether a user passed a flag directly.
+type optValue struct {
+	value   bool
+	present bool
+}
+
+func (o *optValue) Set(s string) error {
+	v, err := strconv.ParseBool(s)
+	o.value = v
+	o.present = true
+	return err
+}
+
+func (o *optValue) String() string {
+	return strconv.FormatBool(o.value)
 }
