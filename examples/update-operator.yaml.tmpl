@@ -20,3 +20,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        operator: Exists
+        effect: NoSchedule
