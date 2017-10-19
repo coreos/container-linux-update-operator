@@ -52,5 +52,5 @@ and after-reboot labels instantaneously.
 
 [1]: https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/
 [2]: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#nodeselector
-[3]: ../examples/before-reboot-daemonset.yaml
-[4]: ../examples/after-reboot-daemonset.yaml
+[3]: ../examples/reboot-annotations/before-reboot-daemonset.yaml
+[4]: ../examples/reboot-annotations/after-reboot-daemonset.yaml
