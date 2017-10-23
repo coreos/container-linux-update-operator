@@ -64,7 +64,7 @@ func New() (c *Client, err error) {
 
 	call := c.conn.BusObject().Call("org.freedesktop.DBus.AddMatch", 0, match)
 	if call.Err != nil {
-		return nil, err
+		return nil, call.Err
 	}
 
 	c.ch = make(chan *dbus.Signal, signalBuffer)
