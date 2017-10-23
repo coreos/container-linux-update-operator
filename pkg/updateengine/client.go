@@ -36,8 +36,9 @@ type Client struct {
 	ch     chan *dbus.Signal
 }
 
-func New() (c *Client, err error) {
-	c = new(Client)
+func New() (*Client, error) {
+	c := new(Client)
+	var err error
 
 	c.conn, err = dbus.SystemBusPrivate()
 	if err != nil {
@@ -115,16 +116,12 @@ func (c *Client) RebootNeededSignal(rcvr chan Status, stop <-chan struct{}) {
 }
 
 // GetStatus gets the current status from update_engine
-func (c *Client) GetStatus() (result Status, err error) {
+func (c *Client) GetStatus() (Status, error) {
 	call := c.object.Call(dbusInterface+".GetStatus", 0)
-	err = call.Err
-	if err != nil {
-		return
+	if call.Err != nil {
+		return Status{}, call.Err
 	}
-
-	result = NewStatus(call.Body)
-
-	return
+	return NewStatus(call.Body), nil
 }
 
 // AttemptUpdate will trigger an update if available. This is an asynchronous
