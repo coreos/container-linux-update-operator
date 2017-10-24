@@ -2,6 +2,7 @@ package agent
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/coreos/go-systemd/login1"
@@ -162,12 +163,19 @@ func (k *Klocksmith) process(stop <-chan struct{}) error {
 		}
 	}
 
+	// wait for the pods to delete completely.
+	wg := sync.WaitGroup{}
 	for _, pod := range pods {
-		glog.Infof("Waiting for pod %q to terminate", pod.Name)
-		if err := k.waitForPodDeletion(pod); err != nil {
-			glog.Errorf("Skipping wait on pod %q: %v", pod.Name, err)
-		}
+		wg.Add(1)
+		go func(pod v1.Pod) {
+			glog.Infof("Waiting for pod %q to terminate", pod.Name)
+			if err := k.waitForPodDeletion(pod); err != nil {
+				glog.Errorf("Skipping wait on pod %q: %v", pod.Name, err)
+			}
+			wg.Done()
+		}(pod)
 	}
+	wg.Wait()
 
 	glog.Info("Node drained, rebooting")
 
