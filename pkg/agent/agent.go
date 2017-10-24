@@ -361,8 +361,8 @@ func (k *Klocksmith) getPodsForDeletion() ([]v1.Pod, error) {
 // waitForPodDeletion waits for a pod to be deleted
 func (k *Klocksmith) waitForPodDeletion(pod v1.Pod) error {
 	return wait.PollImmediate(defaultPollInterval, k.reapTimeout, func() (bool, error) {
-		_, err := k.kc.CoreV1().Pods(pod.Namespace).Get(pod.Name, v1meta.GetOptions{})
-		if errors.IsNotFound(err) {
+		p, err := k.kc.CoreV1().Pods(pod.Namespace).Get(pod.Name, v1meta.GetOptions{})
+		if errors.IsNotFound(err) || (p != nil && p.ObjectMeta.UID != pod.ObjectMeta.UID) {
 			glog.Infof("Deleted pod %q", pod.Name)
 			return true, nil
 		}
