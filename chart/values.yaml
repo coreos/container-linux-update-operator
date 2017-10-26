@@ -1,0 +1,20 @@
+image:
+  repository: quay.io/coreos/container-linux-update-operator
+  tag: v0.4.1
+  pullPolicy: IfNotPresent
+rbac:
+  create: false
+updateAgent:
+  resources: {}
+  tolerations: 
+  - key: node-role.kubernetes.io/master
+    operator: Exists
+    effect: NoSchedule
+  gracePeriod: 600
+updateOperator:
+  replicaCount: 3
+  resources: {}
+  tolerations: 
+  - key: node-role.kubernetes.io/master
+    operator: Exists
+    effect: NoSchedule

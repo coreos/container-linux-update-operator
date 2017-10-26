@@ -1,0 +1,70 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: {{ template "name" . }}-agent
+  labels:
+    app: {{ template "name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: container-linux-update-agent
+    spec:
+      containers:
+      - name: update-agent
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        command:
+        - "/bin/update-agent"
+        volumeMounts:
+          - mountPath: /var/run/dbus
+            name: var-run-dbus
+          - mountPath: /etc/coreos
+            name: etc-coreos
+          - mountPath: /usr/share/coreos
+            name: usr-share-coreos
+          - mountPath: /etc/os-release
+            name: etc-os-release
+        env:
+        - name: UPDATE_AGENT_GRACE_PERIOD
+          value: {{ .Values.updateAgent.gracePeriod | quote }}
+        - name: UPDATE_AGENT_NODE
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        resources:
+{{ toYaml .Values.updateAgent.resources | indent 10 }}
+      volumes:
+      - name: var-run-dbus
+        hostPath:
+          path: /var/run/dbus
+      - name: etc-coreos
+        hostPath:
+          path: /etc/coreos
+      - name: usr-share-coreos
+        hostPath:
+          path: /usr/share/coreos
+      - name: etc-os-release
+        hostPath:
+          path: /etc/os-release
+{{- if .Values.rbac.create }}
+      serviceAccountName: {{ template "name" . }}
+{{- end }}
+{{- if .Values.updateAgent.tolerations }}
+      tolerations:
+{{ toYaml .Values.updateAgent.tolerations | indent 6 }}
+{{- end }}
+{{- if .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+{{- end }}
