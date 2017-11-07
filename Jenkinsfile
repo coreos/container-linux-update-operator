@@ -9,11 +9,10 @@ properties([
     pipelineTriggers([
       // Pull requests, with whitelisting/auth
       [$class: 'GhprbTrigger',
-       cron: '*/1 * * * *',
+       cron: 'H/5 * * * *',
        permitAll: false,
-       orgWhitelist(['coreos', 'coreos-inc']),
-       displayBuildErrorsOnDownstreamBuilds: true,
-       gitHubAuthId: 'dd528eca-0dbc-4c17-a4c6-8e8a2ba7f43d'],
+       orgslist: 'coreos',
+       displayBuildErrorsOnDownstreamBuilds: true,],
     ])
 ])
 
