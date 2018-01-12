@@ -7,9 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
 	kubelettypes "k8s.io/kubernetes/pkg/kubelet/types"
 )
 
@@ -26,36 +24,19 @@ func GetPodsForDeletion(kc kubernetes.Interface, node string) (pods []v1.Pod, er
 		return pods, err
 	}
 
+	// Delete pods, even if they are lone pods without a controller. As an
+	// exception, skip mirror pods and daemonset pods with an existing
+	// daemonset (since the daemonset owner would recreate them anyway).
 	for _, pod := range podList.Items {
+
 		// skip mirror pods
 		if _, ok := pod.Annotations[kubelettypes.ConfigMirrorAnnotationKey]; ok {
 			continue
 		}
 
-		// unlike kubelet we don't care if you have emptyDir volumes or
-		// are not replicated via some controller. sorry.
-
-		// but we do skip daemonset pods, since ds controller will just restart them anyways.
-		// As an exception, we do delete daemonset pods that have been "orphaned" by their controller.
-		if creatorRef, ok := pod.Annotations[v1.CreatedByAnnotation]; ok {
-			// decode ref to find kind
-			sr := &v1.SerializedReference{}
-			if err := runtime.DecodeInto(scheme.Codecs.UniversalDecoder(), []byte(creatorRef), sr); err != nil {
-				// really shouldn't happen but at least complain verbosely if it does
-				return nil, fmt.Errorf("failed decoding %q annotation on pod %q: %v", v1.CreatedByAnnotation, pod.Name, err)
-			}
-
-			if sr.Reference.Kind == "DaemonSet" {
-				_, err := getDaemonsetController(kc, sr)
-				if err == nil {
-					// it exists, skip it
-					continue
-				}
-				if !errors.IsNotFound(err) {
-					return nil, fmt.Errorf("failed to get controller of pod %q: %v", pod.Name, err)
-				}
-				// else the controller is gone, fall through to delete this orphan
-			}
+		// check if pod is a daemonset owner
+		if _, err = getOwnerDaemonset(kc, pod); err == nil {
+			continue
 		}
 
 		pods = append(pods, pod)
@@ -64,13 +45,33 @@ func GetPodsForDeletion(kc kubernetes.Interface, node string) (pods []v1.Pod, er
 	return pods, nil
 }
 
-// Pared down version of
-// https://github.com/kubernetes/kubernetes/blob/cbbf22a7d2b06a55066b16885a4baaf4ce92d3a4/pkg/kubectl/cmd/drain.go's
-// getDaemonsetController().
-func getDaemonsetController(kc kubernetes.Interface, sr *v1.SerializedReference) (interface{}, error) {
-	switch sr.Reference.Kind {
-	case "DaemonSet":
-		return kc.ExtensionsV1beta1().DaemonSets(sr.Reference.Namespace).Get(sr.Reference.Name, v1meta.GetOptions{})
+// getOwnerDaemonset returns an existing DaemonSet owner if it exists.
+func getOwnerDaemonset(kc kubernetes.Interface, pod v1.Pod) (interface{}, error) {
+	if len(pod.OwnerReferences) == 0 {
+		return nil, fmt.Errorf("pod %q has no owner objects", pod.Name)
 	}
-	return nil, fmt.Errorf("unknown controller kind %q", sr.Reference.Kind)
+	for _, ownerRef := range pod.OwnerReferences {
+		// skip pod if it is owned by an existing daemonset
+		if ownerRef.Kind == "DaemonSet" {
+			ds, err := getDaemonsetController(kc, pod.Namespace, &ownerRef)
+			if err == nil {
+				// daemonset owner exists
+				return ds, nil
+			}
+			if !errors.IsNotFound(err) {
+				return nil, fmt.Errorf("failed to get controller of pod %q: %v", pod.Name, err)
+			}
+		}
+	}
+	// pod may have owners, but they don't exist or aren't daemonsets
+	return nil, fmt.Errorf("pod %q has no existing damonset owner", pod.Name)
+}
+
+// Stripped down version of https://github.com/kubernetes/kubernetes/blob/1bc56825a2dff06f29663a024ee339c25e6e6280/pkg/kubectl/cmd/drain.go#L272
+func getDaemonsetController(kc kubernetes.Interface, namespace string, controllerRef *v1meta.OwnerReference) (interface{}, error) {
+	switch controllerRef.Kind {
+	case "DaemonSet":
+		return kc.ExtensionsV1beta1().DaemonSets(namespace).Get(controllerRef.Name, v1meta.GetOptions{})
+	}
+	return nil, fmt.Errorf("Unknown controller kind %q", controllerRef.Kind)
 }
