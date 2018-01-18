@@ -12,6 +12,7 @@ const (
 
 	// Key set to "true" by the update-agent when a reboot is requested.
 	AnnotationRebootNeeded = Prefix + "reboot-needed"
+	LabelRebootNeeded      = Prefix + "reboot-needed"
 
 	// Key set to "true" by the update-agent when node-drain and reboot is
 	// initiated.

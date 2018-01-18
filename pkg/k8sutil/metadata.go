@@ -80,8 +80,8 @@ func SetNodeAnnotations(nc v1core.NodeInterface, node string, m map[string]strin
 	})
 }
 
-// SetNodeAnnotationsLabels sets all keys in a and l to their respective values in
-// node's annotations and labels, likewise
+// SetNodeAnnotationsLabels sets all keys in a and l to their values in
+// node's annotations and labels, respectively
 func SetNodeAnnotationsLabels(nc v1core.NodeInterface, node string, a, l map[string]string) error {
 	return UpdateNodeRetry(nc, node, func(n *v1api.Node) {
 		for k, v := range a {
