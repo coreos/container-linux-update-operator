@@ -92,10 +92,14 @@ func (k *Klocksmith) process(stop <-chan struct{}) error {
 		constants.AnnotationRebootInProgress: constants.False,
 		constants.AnnotationRebootNeeded:     constants.False,
 	}
+	labels := map[string]string{
+		constants.LabelRebootNeeded: constants.False,
+	}
 	glog.Infof("Setting annotations %#v", anno)
-	if err := k8sutil.SetNodeAnnotations(k.nc, k.node, anno); err != nil {
+	if err := k8sutil.SetNodeAnnotationsLabels(k.nc, k.node, anno, labels); err != nil {
 		return err
 	}
+
 	// Since we set 'reboot-needed=false', 'ok-to-reboot' should clear.
 	// Wait for it to do so, else we might start reboot-looping
 	if err := k.waitForNotOkToReboot(); err != nil {
@@ -199,14 +203,17 @@ func (k *Klocksmith) updateStatusCallback(s updateengine.Status) {
 		constants.AnnotationNewVersion:      s.NewVersion,
 	}
 
+	labels := map[string]string{}
+
 	// indicate we need a reboot
 	if s.CurrentOperation == updateengine.UpdateStatusUpdatedNeedReboot {
 		glog.Info("Indicating a reboot is needed")
 		anno[constants.AnnotationRebootNeeded] = constants.True
+		labels[constants.LabelRebootNeeded] = constants.True
 	}
 
 	wait.PollUntil(defaultPollInterval, func() (bool, error) {
-		if err := k8sutil.SetNodeAnnotations(k.nc, k.node, anno); err != nil {
+		if err := k8sutil.SetNodeAnnotationsLabels(k.nc, k.node, anno, labels); err != nil {
 			glog.Errorf("Failed to set annotation %q: %v", constants.AnnotationStatus, err)
 			return false, nil
 		}

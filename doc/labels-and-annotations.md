@@ -30,12 +30,13 @@ A few labels may be set directly by admins to customize behavior. These are call
 | id   | coreos  |  update-agent    | Reflects the ID in `/etc/os-release` |
 | version | 1497.7.0 | update-agent | Reflects the VERSION in `/etc/os-release` |
 | group | stable | update-agent     | Reflects the GROUP in `/usr/share/coreos/update.conf` or `/etc/coreos/update.conf` |
+| reboot-needed | true | update-agent | Reflects the reboot-needed annotation |
 
 **Annotations**
 
 | name | example | setter           | description |
 |------|---------|------------------|-------------|
-| reboot-needed  | true/false | update-agent | Set to true to request a coordinated reboot |
+| reboot-needed  | true/false | update-agent | Updates to true to request a coordinated reboot from the operator |
 | reboot-in-progress | true/false | update-agent | Set to true to indicate a reboot is in progress |
 | status | UPDATE_STATUS_IDLE | update-agent | Reflects the `update_engine` CurrentOperation status value |
 | new-version       | 0.0.0      | update-agent | Reflects the `update_engine` NewVersion status value |
