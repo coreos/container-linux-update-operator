@@ -21,6 +21,7 @@ import (
 
 	"github.com/coreos/container-linux-update-operator/pkg/constants"
 	"github.com/coreos/container-linux-update-operator/pkg/k8sutil"
+	"github.com/coreos/locksmith/pkg/timeutil"
 )
 
 const (
@@ -102,6 +103,9 @@ type Kontroller struct {
 	// auto-label Container Linux nodes for migration compatability
 	autoLabelContainerLinux bool
 
+	// reboot window
+	rebootWindow *timeutil.Periodic
+
 	// Deprecated
 	manageAgent    bool
 	agentImageRepo string
@@ -116,6 +120,9 @@ type Config struct {
 	// annotations to look for before and after reboots
 	BeforeRebootAnnotations []string
 	AfterRebootAnnotations  []string
+	// reboot window
+	RebootWindowStart  string
+	RebootWindowLength string
 	// Deprecated
 	ManageAgent    bool
 	AgentImageRepo string
@@ -159,6 +166,16 @@ func New(config Config) (*Kontroller, error) {
 		return nil, fmt.Errorf("unable to determine operator namespace: please ensure POD_NAMESPACE environment variable is set")
 	}
 
+	var rebootWindow *timeutil.Periodic
+	if config.RebootWindowStart != "" && config.RebootWindowLength != "" {
+		rw, err := timeutil.ParsePeriodic(config.RebootWindowStart, config.RebootWindowLength)
+		if err != nil {
+			return nil, fmt.Errorf("Error parsing reboot window: %s", err)
+		}
+
+		rebootWindow = rw
+	}
+
 	return &Kontroller{
 		kc: kc,
 		nc: nc,
@@ -171,6 +188,7 @@ func New(config Config) (*Kontroller, error) {
 		autoLabelContainerLinux:     config.AutoLabelContainerLinux,
 		manageAgent:                 config.ManageAgent,
 		agentImageRepo:              config.AgentImageRepo,
+		rebootWindow:                rebootWindow,
 	}, nil
 }
 
@@ -424,7 +442,8 @@ func (k *Kontroller) checkAfterReboot() error {
 // before-reboot=true label. This is considered the beginning of the reboot
 // process from the perspective of the update-operator. It will only mark
 // nodes with this label up to the maximum number of concurrently rebootable
-// nodes as configured with the maxRebootingNodes constant.
+// nodes as configured with the maxRebootingNodes constant. It also checks if
+// we are inside the reboot window.
 // It cleans up the before-reboot annotations before it applies the label, in
 // case there are any left over from the last reboot.
 // If there is an error getting the list of nodes or updating any of them, an
@@ -433,6 +452,17 @@ func (k *Kontroller) markBeforeReboot() error {
 	nodelist, err := k.nc.List(v1meta.ListOptions{})
 	if err != nil {
 		return fmt.Errorf("Failed listing nodes: %v", err)
+	}
+
+	// check if a reboot window is configured
+	if k.rebootWindow != nil {
+		// get previous occurrence relative to now
+		period := k.rebootWindow.Previous(time.Now())
+		// check if we are inside the reboot window
+		if !(period.End.After(time.Now())) {
+			glog.V(4).Info("We are outside the reboot window; not labeling rebootable nodes for now")
+			return nil
+		}
 	}
 
 	// find nodes which are still rebooting

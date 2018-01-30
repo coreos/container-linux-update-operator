@@ -1,5 +1,5 @@
-hash: d4edf4f18313a1b63143d0aac9e32cf705b4a7e891061ec30b21bfb5bc67de73
-updated: 2017-10-17T11:38:24.938456123-07:00
+hash: 82a2e8037d94d35e32086d9835bbed533cde6a0407fecf600d6690fd3a11d79c
+updated: 2017-12-29T09:12:14.975844829+01:00
 imports:
 - name: github.com/blang/semver
   version: 31b736133b98f26d5e078ec9eb591666edfd091f
@@ -7,6 +7,10 @@ imports:
   version: 48702e0da86bd25e76cfef347e2adeb434a0d0a6
   subpackages:
   - login1
+- name: github.com/coreos/locksmith
+  version: ef4279232ecdd23b7a3e3092747367b413da6e6b
+  subpackages:
+  - pkg/timeutil
 - name: github.com/coreos/pkg
   version: 3ac0863d7acf3bc44daf49afef8919af12f704ef
   subpackages:
