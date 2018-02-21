@@ -52,6 +52,9 @@ const (
 	// It is an opaque string, but might be semver.
 	AnnotationNewVersion = Prefix + "new-version"
 
+	// Ket set by update-agent to indicate it was responsible for making node unschedulable
+	AnnotationAgentMadeUnschedulable = Prefix + "agent-made-unschedulable"
+
 	// Keys set to true when the operator is waiting for configured annotation
 	// before and after the reboot repectively
 	LabelBeforeReboot = Prefix + "before-reboot"

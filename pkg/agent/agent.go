@@ -86,6 +86,16 @@ func (k *Klocksmith) process(stop <-chan struct{}) error {
 		return fmt.Errorf("failed to set node info: %v", err)
 	}
 
+	glog.Info("Checking annotations")
+	node, err := k8sutil.GetNodeRetry(k.nc, k.node)
+	if err != nil {
+		return err
+	}
+
+	// Only make a node schedulable if a reboot was in progress. This prevents a node from being made schedulable
+	// if it was made unschedulable by something other thin the agent
+	makeSchedulable := node.Annotations[constants.AnnotationAgentMadeUnschedulable] == constants.True
+
 	// set coreos.com/update1/reboot-in-progress=false and
 	// coreos.com/update1/reboot-needed=false
 	anno := map[string]string{
@@ -106,10 +116,14 @@ func (k *Klocksmith) process(stop <-chan struct{}) error {
 		return err
 	}
 
-	// we are schedulable now.
-	glog.Info("Marking node as schedulable")
-	if err := k8sutil.Unschedulable(k.nc, k.node, false); err != nil {
-		return err
+	if makeSchedulable {
+		// we are schedulable now.
+		glog.Info("Marking node as schedulable")
+		if err := k8sutil.Unschedulable(k.nc, k.node, false); err != nil {
+			return err
+		}
+	} else {
+		glog.Info("Skipping marking node as schedulable -- node was unschedulable prior to update reboot")
 	}
 
 	// watch update engine for status updates
@@ -136,16 +150,36 @@ func (k *Klocksmith) process(stop <-chan struct{}) error {
 		return err
 	}
 
+	glog.Info("Checking if node is already unschedulable")
+	node, err = k8sutil.GetNodeRetry(k.nc, k.node)
+	if err != nil {
+		return err
+	}
+	alreadyUnschedulable := node.Spec.Unschedulable
+
 	// drain self equates to:
-	// 1. set Unschedulable
+	// 1. set Unschedulable if necessary
 	// 2. delete all pods
 	// unlike `kubectl drain`, we do not care about emptyDir or orphan pods
 	// ('any pods that are neither mirror pods nor managed by
 	// ReplicationController, ReplicaSet, DaemonSet or Job')
 
-	glog.Info("Marking node as unschedulable")
-	if err := k8sutil.Unschedulable(k.nc, k.node, true); err != nil {
-		return err
+	if alreadyUnschedulable == false {
+		glog.Info("Marking node as unschedulable")
+		if err := k8sutil.Unschedulable(k.nc, k.node, true); err != nil {
+			return err
+		}
+
+		// set constants.AnnotationRebootInProgress and drain self
+		anno = map[string]string{
+			constants.AnnotationAgentMadeUnschedulable: constants.True,
+		}
+
+		if err := k8sutil.SetNodeAnnotations(k.nc, k.node, anno); err != nil {
+			return err
+		}
+	} else {
+		glog.Info("Node already marked as unschedulable")
 	}
 
 	glog.Info("Getting pod list for deletion")
