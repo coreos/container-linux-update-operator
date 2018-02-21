@@ -35,6 +35,22 @@ func NodeAnnotationCondition(selector fields.Selector) watch.ConditionFunc {
 	}
 }
 
+// GetNodeRetry gets a node object, retrying up to DefaultBackoff number of times if it fails
+func GetNodeRetry(nc v1core.NodeInterface, node string) (*v1api.Node, error) {
+	var apiNode *v1api.Node
+	err := RetryOnError(DefaultBackoff, func() error {
+		n, getErr := nc.Get(node, v1meta.GetOptions{})
+		if getErr != nil {
+			return fmt.Errorf("failed to get node %q: %v", node, getErr)
+		}
+
+		apiNode = n
+		return nil
+	})
+
+	return apiNode, err
+}
+
 // UpdateNodeRetry calls f to update a node object in Kubernetes.
 // It will attempt to update the node by applying f to it up to DefaultBackoff
 // number of times.
