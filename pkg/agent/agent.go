@@ -123,7 +123,16 @@ func (k *Klocksmith) process(stop <-chan struct{}) error {
 			return err
 		}
 	} else {
-		glog.Info("Skipping marking node as schedulable -- node was unschedulable prior to update reboot")
+		glog.Info("Skipping marking node as schedulable -- node was marked unschedulable by an external source")
+	}
+
+	anno = map[string]string{
+		constants.AnnotationAgentMadeUnschedulable: constants.False,
+	}
+
+	glog.Infof("Setting annotations %#v", anno)
+	if err := k8sutil.SetNodeAnnotations(k.nc, k.node, anno); err != nil {
+		return err
 	}
 
 	// watch update engine for status updates
@@ -140,22 +149,26 @@ func (k *Klocksmith) process(stop <-chan struct{}) error {
 		glog.Warningf("error waiting for an ok-to-reboot: %v", err)
 	}
 
-	// set constants.AnnotationRebootInProgress and drain self
-	anno = map[string]string{
-		constants.AnnotationRebootInProgress: constants.True,
-	}
-
-	glog.Infof("Setting annotations %#v", anno)
-	if err := k8sutil.SetNodeAnnotations(k.nc, k.node, anno); err != nil {
-		return err
-	}
-
 	glog.Info("Checking if node is already unschedulable")
 	node, err = k8sutil.GetNodeRetry(k.nc, k.node)
 	if err != nil {
 		return err
 	}
 	alreadyUnschedulable := node.Spec.Unschedulable
+
+	// set constants.AnnotationRebootInProgress and drain self
+	anno = map[string]string{
+		constants.AnnotationRebootInProgress: constants.True,
+	}
+
+	if !alreadyUnschedulable {
+		anno[constants.AnnotationAgentMadeUnschedulable] = constants.True
+	}
+
+	glog.Infof("Setting annotations %#v", anno)
+	if err := k8sutil.SetNodeAnnotations(k.nc, k.node, anno); err != nil {
+		return err
+	}
 
 	// drain self equates to:
 	// 1. set Unschedulable if necessary
@@ -164,18 +177,9 @@ func (k *Klocksmith) process(stop <-chan struct{}) error {
 	// ('any pods that are neither mirror pods nor managed by
 	// ReplicationController, ReplicaSet, DaemonSet or Job')
 
-	if alreadyUnschedulable == false {
+	if !alreadyUnschedulable {
 		glog.Info("Marking node as unschedulable")
 		if err := k8sutil.Unschedulable(k.nc, k.node, true); err != nil {
-			return err
-		}
-
-		// set constants.AnnotationRebootInProgress and drain self
-		anno = map[string]string{
-			constants.AnnotationAgentMadeUnschedulable: constants.True,
-		}
-
-		if err := k8sutil.SetNodeAnnotations(k.nc, k.node, anno); err != nil {
 			return err
 		}
 	} else {

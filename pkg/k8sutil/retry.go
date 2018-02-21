@@ -85,11 +85,8 @@ func RetryOnError(backoff wait.Backoff, fn func() error) error {
 	var lastErr error
 	err := wait.ExponentialBackoff(backoff, func() (bool, error) {
 		lastErr := fn()
-		if lastErr == nil {
-			return true, nil
-		}
 
-		return false, nil
+		return lastErr == nil, nil
 	})
 
 	if err == wait.ErrWaitTimeout {
