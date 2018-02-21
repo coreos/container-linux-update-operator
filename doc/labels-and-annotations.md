@@ -41,3 +41,4 @@ A few labels may be set directly by admins to customize behavior. These are call
 | status | UPDATE_STATUS_IDLE | update-agent | Reflects the `update_engine` CurrentOperation status value |
 | new-version       | 0.0.0      | update-agent | Reflects the `update_engine` NewVersion status value |
 | last-checked-time | 1501621307 | update-agent | Reflects the `update_engine` LastCheckedTime status value |
+| agent-made-unschedulable | true/false | update-agent | Indicates if the agent made the node unschedulable. If false, something other than the agent made the node unschedulable |
