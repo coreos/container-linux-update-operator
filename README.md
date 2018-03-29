@@ -39,8 +39,7 @@ To start/stop a service, run `systemctl start <name>` or `systemctl stop <name>`
 Create the `update-operator` deployment and `update-agent` daemonset.
 
 ```
-kubectl create -f examples/update-operator.yaml
-kubectl create -f examples/update-agent.yaml
+kubectl apply -f examples/deploy -R
 ```
 
 ## Test
