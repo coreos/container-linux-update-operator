@@ -49,11 +49,10 @@ sudo systemctl mask locksmithd.service --now
 
 ### Deploy
 
-Edit `examples/update-operator.yaml` and `examples/update-agent.yaml` to refer to the development image. Create the `update-operator` deployment and `update-agent` daemonset.
+Edit `examples/deploy/update-operator.yaml` and `examples/deploy/update-agent.yaml` to refer to the development image. Create the `update-operator` deployment and `update-agent` daemonset.
 
 ```
-kubectl create -f examples/update-operator.yaml
-kubectl create -f examples/update-agent.yaml
+kubectl apply -f examples/deploy -R
 ```
 
 ### Checks

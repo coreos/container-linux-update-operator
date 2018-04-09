@@ -47,8 +47,8 @@ Be sure your image can handle being rescheduled to a node on which it has
 previously been run as the `update-operator` does not remove the before-reboot
 and after-reboot labels instantaneously.
 
-* [examples/before-reboot-daemonset.yaml][3]
-* [examples/after-reboot-daemonset.yaml][4]
+* [examples/reboot-annotations/before-reboot-daemonset.yaml][3]
+* [examples/reboot-annotations/after-reboot-daemonset.yaml][4]
 
 [1]: https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/
 [2]: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#nodeselector
