@@ -79,3 +79,18 @@ func RetryOnConflict(backoff wait.Backoff, fn func() error) error {
 	}
 	return err
 }
+
+// RetryOnError retries a function repeatedly with the specified backoff until it succeeds or times out
+func RetryOnError(backoff wait.Backoff, fn func() error) error {
+	var lastErr error
+	err := wait.ExponentialBackoff(backoff, func() (bool, error) {
+		lastErr := fn()
+
+		return lastErr == nil, nil
+	})
+
+	if err == wait.ErrWaitTimeout {
+		err = lastErr
+	}
+	return err
+}
