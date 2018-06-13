@@ -93,8 +93,9 @@ func (k *Klocksmith) process(stop <-chan struct{}) error {
 	}
 
 	// Only make a node schedulable if a reboot was in progress. This prevents a node from being made schedulable
-	// if it was made unschedulable by something other thin the agent
-	makeSchedulable := node.Annotations[constants.AnnotationAgentMadeUnschedulable] == constants.True
+	// if it was made unschedulable by something other than the agent
+	madeUnschedulableAnnotation, madeUnschedulableAnnotationExists := node.Annotations[constants.AnnotationAgentMadeUnschedulable]
+	makeSchedulable := madeUnschedulableAnnotation == constants.True
 
 	// set coreos.com/update1/reboot-in-progress=false and
 	// coreos.com/update1/reboot-needed=false
@@ -122,17 +123,17 @@ func (k *Klocksmith) process(stop <-chan struct{}) error {
 		if err := k8sutil.Unschedulable(k.nc, k.node, false); err != nil {
 			return err
 		}
-	} else {
+
+		anno = map[string]string{
+			constants.AnnotationAgentMadeUnschedulable: constants.False,
+		}
+
+		glog.Infof("Setting annotations %#v", anno)
+		if err := k8sutil.SetNodeAnnotations(k.nc, k.node, anno); err != nil {
+			return err
+		}
+	} else if madeUnschedulableAnnotationExists { // Annotation exists so node was marked unschedulable by external source
 		glog.Info("Skipping marking node as schedulable -- node was marked unschedulable by an external source")
-	}
-
-	anno = map[string]string{
-		constants.AnnotationAgentMadeUnschedulable: constants.False,
-	}
-
-	glog.Infof("Setting annotations %#v", anno)
-	if err := k8sutil.SetNodeAnnotations(k.nc, k.node, anno); err != nil {
-		return err
 	}
 
 	// watch update engine for status updates
