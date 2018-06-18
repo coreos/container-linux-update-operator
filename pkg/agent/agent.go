@@ -97,6 +97,36 @@ func (k *Klocksmith) process(stop <-chan struct{}) error {
 	madeUnschedulableAnnotation, madeUnschedulableAnnotationExists := node.Annotations[constants.AnnotationAgentMadeUnschedulable]
 	makeSchedulable := madeUnschedulableAnnotation == constants.True
 
+	// Wait for node to become ready before reporting that the reboot has completed
+	watcher, err := k.nc.Watch(v1meta.ListOptions{
+		FieldSelector:   fields.OneTermEqualSelector("metadata.name", node.Name).String(),
+		ResourceVersion: node.ResourceVersion,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to watch self node (%q): %v", k.node, err)
+	}
+
+	_, err = watch.Until(time.Hour, watcher, watch.ConditionFunc(func(event watch.Event) (bool, error) {
+		switch event.Type {
+		case watch.Error:
+			return false, fmt.Errorf("error watching node: %v", event.Object)
+		case watch.Deleted:
+			return false, fmt.Errorf("our node was deleted while we were waiting for ready")
+		}
+
+		node := event.Object.(*v1.Node)
+		for _, condition := range node.Status.Conditions {
+			if condition.Type == v1.NodeReady && condition.Status == v1.ConditionTrue {
+				return true, nil
+			}
+		}
+
+		return false, nil
+	}))
+	if err != nil {
+		return fmt.Errorf("failed while waiting for node to become ready: %v", err)
+	}
+
 	// set coreos.com/update1/reboot-in-progress=false and
 	// coreos.com/update1/reboot-needed=false
 	anno := map[string]string{
