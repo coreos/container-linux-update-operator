@@ -417,7 +417,7 @@ func (k *Kontroller) checkAfterReboot() error {
 	postRebootNodes := k8sutil.FilterNodesByRequirement(nodelist.Items, afterRebootReq)
 
 	for _, n := range postRebootNodes {
-		if hasAllAnnotations(n, k.afterRebootAnnotations) {
+		if hasAllAnnotations(n, k.afterRebootAnnotations) && isNodeReady(n) {
 			glog.V(4).Infof("Deleting label %q for %q", constants.LabelAfterReboot, n.Name)
 			glog.V(4).Infof("Setting annotation %q to false for %q", constants.AnnotationOkToReboot, n.Name)
 			err = k8sutil.UpdateNodeRetry(k.nc, n.Name, func(node *v1api.Node) {
@@ -575,4 +575,13 @@ func hasAllAnnotations(node v1api.Node, annotations []string) bool {
 		}
 	}
 	return true
+}
+
+func isNodeReady(node v1api.Node) bool {
+	for _, condition := range node.Status.Conditions {
+		if condition.Type == v1api.NodeReady && condition.Status == v1api.ConditionTrue {
+			return true
+		}
+	}
+	return false
 }
