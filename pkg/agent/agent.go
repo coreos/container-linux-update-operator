@@ -29,6 +29,7 @@ type Klocksmith struct {
 	ue          *updateengine.Client
 	lc          *login1.Conn
 	reapTimeout time.Duration
+	rebootWait  time.Duration
 }
 
 const defaultPollInterval = 10 * time.Second
@@ -40,7 +41,7 @@ var (
 	}).AsSelector()
 )
 
-func New(node string, reapTimeout time.Duration) (*Klocksmith, error) {
+func New(node string, reapTimeout time.Duration, rebootWait time.Duration) (*Klocksmith, error) {
 	// set up kubernetes in-cluster client
 	kc, err := k8sutil.GetClient("")
 	if err != nil {
@@ -62,7 +63,7 @@ func New(node string, reapTimeout time.Duration) (*Klocksmith, error) {
 		return nil, fmt.Errorf("error establishing connection to logind dbus: %v", err)
 	}
 
-	return &Klocksmith{node, kc, nc, ue, lc, reapTimeout}, nil
+	return &Klocksmith{node, kc, nc, ue, lc, reapTimeout, rebootWait}, nil
 }
 
 // Run starts the agent to listen for an update_engine reboot signal and react
@@ -219,6 +220,11 @@ func (k *Klocksmith) process(stop <-chan struct{}) error {
 		}(pod)
 	}
 	wg.Wait()
+
+	// We wait a little bit more time to perform finalizing operations
+	// This solves problems with some storage provisioners like rook.
+	glog.Infof("Waiting for finalizing operations, waiting %v", k.rebootWait)
+	time.Sleep(k.rebootWait)
 
 	glog.Info("Node drained, rebooting")
 
