@@ -14,7 +14,7 @@ spec:
       - name: update-operator
         image: quay.io/coreos/container-linux-update-operator:v0.7.0
         command:
-        - "/bin/update-operator"
+        - "/bin/update-operator --reboot-window-start=\"Tue 09:00\" --reboot-window-length=6h"
         env:
         - name: POD_NAMESPACE
           valueFrom:
