@@ -19,6 +19,10 @@ package extensions
 import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/kubernetes/pkg/apis/apps"
+	"k8s.io/kubernetes/pkg/apis/autoscaling"
+	"k8s.io/kubernetes/pkg/apis/networking"
+	"k8s.io/kubernetes/pkg/apis/policy"
 )
 
 // GroupName is the group name use in this package
@@ -42,29 +46,25 @@ var (
 	AddToScheme   = SchemeBuilder.AddToScheme
 )
 
-// Adds the list of known types to api.Scheme.
+// Adds the list of known types to the given scheme.
 func addKnownTypes(scheme *runtime.Scheme) error {
 	// TODO this gets cleaned up when the types are fixed
 	scheme.AddKnownTypes(SchemeGroupVersion,
-		&Deployment{},
-		&DeploymentList{},
-		&DeploymentRollback{},
+		&apps.Deployment{},
+		&apps.DeploymentList{},
+		&apps.DeploymentRollback{},
 		&ReplicationControllerDummy{},
-		&Scale{},
-		&ThirdPartyResource{},
-		&ThirdPartyResourceList{},
-		&DaemonSetList{},
-		&DaemonSet{},
-		&ThirdPartyResourceData{},
-		&ThirdPartyResourceDataList{},
-		&Ingress{},
-		&IngressList{},
-		&ReplicaSet{},
-		&ReplicaSetList{},
-		&PodSecurityPolicy{},
-		&PodSecurityPolicyList{},
-		&NetworkPolicy{},
-		&NetworkPolicyList{},
+		&apps.DaemonSetList{},
+		&apps.DaemonSet{},
+		&networking.Ingress{},
+		&networking.IngressList{},
+		&apps.ReplicaSet{},
+		&apps.ReplicaSetList{},
+		&policy.PodSecurityPolicy{},
+		&policy.PodSecurityPolicyList{},
+		&autoscaling.Scale{},
+		&networking.NetworkPolicy{},
+		&networking.NetworkPolicyList{},
 	)
 	return nil
 }

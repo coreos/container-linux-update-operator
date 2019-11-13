@@ -45,27 +45,16 @@ const (
 	// to one container of a pod.
 	SeccompContainerAnnotationKeyPrefix string = "container.seccomp.security.alpha.kubernetes.io/"
 
-	// CreatedByAnnotation represents the key used to store the spec(json)
-	// used to create the resource.
-	CreatedByAnnotation = "kubernetes.io/created-by"
+	// SeccompProfileRuntimeDefault represents the default seccomp profile used by container runtime.
+	SeccompProfileRuntimeDefault string = "runtime/default"
+
+	// DeprecatedSeccompProfileDockerDefault represents the default seccomp profile used by docker.
+	// This is now deprecated and should be replaced by SeccompProfileRuntimeDefault.
+	DeprecatedSeccompProfileDockerDefault string = "docker/default"
 
 	// PreferAvoidPodsAnnotationKey represents the key of preferAvoidPods data (json serialized)
 	// in the Annotations of a Node.
 	PreferAvoidPodsAnnotationKey string = "scheduler.alpha.kubernetes.io/preferAvoidPods"
-
-	// SysctlsPodAnnotationKey represents the key of sysctls which are set for the infrastructure
-	// container of a pod. The annotation value is a comma separated list of sysctl_name=value
-	// key-value pairs. Only a limited set of whitelisted and isolated sysctls is supported by
-	// the kubelet. Pods with other sysctls will fail to launch.
-	SysctlsPodAnnotationKey string = "security.alpha.kubernetes.io/sysctls"
-
-	// UnsafeSysctlsPodAnnotationKey represents the key of sysctls which are set for the infrastructure
-	// container of a pod. The annotation value is a comma separated list of sysctl_name=value
-	// key-value pairs. Unsafe sysctls must be explicitly enabled for a kubelet. They are properly
-	// namespaced to a pod or a container, but their isolation is usually unclear or weak. Their use
-	// is at-your-own-risk. Pods that attempt to set an unsafe sysctl that is not enabled for a kubelet
-	// will fail to launch.
-	UnsafeSysctlsPodAnnotationKey string = "security.alpha.kubernetes.io/unsafe-sysctls"
 
 	// ObjectTTLAnnotations represents a suggestion for kubelet for how long it can cache
 	// an object (e.g. secret, config map) before fetching it again from apiserver.
@@ -90,19 +79,28 @@ const (
 	// Not all cloud providers support this annotation, though AWS & GCE do.
 	AnnotationLoadBalancerSourceRangesKey = "service.beta.kubernetes.io/load-balancer-source-ranges"
 
-	// AnnotationValueExternalTrafficLocal Value of annotation to specify local endpoints behavior.
-	AnnotationValueExternalTrafficLocal = "OnlyLocal"
-	// AnnotationValueExternalTrafficGlobal Value of annotation to specify global (legacy) behavior.
-	AnnotationValueExternalTrafficGlobal = "Global"
+	// EndpointsLastChangeTriggerTime is the annotation key, set for endpoints objects, that
+	// represents the timestamp (stored as RFC 3339 date-time string, e.g. '2018-10-22T19:32:52.1Z')
+	// of the last change, of some Pod or Service object, that triggered the endpoints object change.
+	// In other words, if a Pod / Service changed at time T0, that change was observed by endpoints
+	// controller at T1, and the Endpoints object was changed at T2, the
+	// EndpointsLastChangeTriggerTime would be set to T0.
+	//
+	// The "endpoints change trigger" here means any Pod or Service change that resulted in the
+	// Endpoints object change.
+	//
+	// Given the definition of the "endpoints change trigger", please note that this annotation will
+	// be set ONLY for endpoints object changes triggered by either Pod or Service change. If the
+	// Endpoints object changes due to other reasons, this annotation won't be set (or updated if it's
+	// already set).
+	//
+	// This annotation will be used to compute the in-cluster network programming latency SLI, see
+	// https://github.com/kubernetes/community/blob/master/sig-scalability/slos/network_programming_latency.md
+	EndpointsLastChangeTriggerTime = "endpoints.kubernetes.io/last-change-trigger-time"
 
-	// TODO: The beta annotations have been deprecated, remove them when we release k8s 1.8.
-
-	// BetaAnnotationHealthCheckNodePort Annotation specifying the healthcheck nodePort for the service.
-	// If not specified, annotation is created by the service api backend with the allocated nodePort.
-	// Will use user-specified nodePort value if specified by the client.
-	BetaAnnotationHealthCheckNodePort = "service.beta.kubernetes.io/healthcheck-nodeport"
-
-	// BetaAnnotationExternalTraffic An annotation that denotes if this Service desires to route
-	// external traffic to local endpoints only. This preserves Source IP and avoids a second hop.
-	BetaAnnotationExternalTraffic = "service.beta.kubernetes.io/external-traffic"
+	// MigratedPluginsAnnotationKey is the annotation key, set for CSINode objects, that is a comma-separated
+	// list of in-tree plugins that will be serviced by the CSI backend on the Node represented by CSINode.
+	// This annotation is used by the Attach Detach Controller to determine whether to use the in-tree or
+	// CSI Backend for a volume plugin on a specific node.
+	MigratedPluginsAnnotationKey = "storage.alpha.kubernetes.io/migrated-plugins"
 )
