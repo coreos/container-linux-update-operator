@@ -1,6 +1,7 @@
 package operator
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
@@ -155,7 +156,7 @@ func New(config Config) (*Kontroller, error) {
 
 	leaderElectionBroadcaster := record.NewBroadcaster()
 	leaderElectionBroadcaster.StartRecordingToSink(&v1core.EventSinkImpl{
-		Interface: v1core.New(leaderElectionClient.Core().RESTClient()).Events(""),
+		Interface: v1core.New(leaderElectionClient.CoreV1().RESTClient()).Events(""),
 	})
 	leaderElectionEventRecorder := leaderElectionBroadcaster.NewRecorder(runtime.NewScheme(), v1api.EventSource{
 		Component: leaderElectionEventSourceComponent,
@@ -242,7 +243,7 @@ func (k *Kontroller) withLeaderElection() error {
 			Namespace: k.namespace,
 			Name:      leaderElectionResourceName,
 		},
-		Client: k.leaderElectionClient,
+		Client: k.leaderElectionClient.CoreV1(),
 		LockConfig: resourcelock.ResourceLockConfig{
 			Identity:      id,
 			EventRecorder: k.leaderElectionEventRecorder,
@@ -256,13 +257,13 @@ func (k *Kontroller) withLeaderElection() error {
 		// and the KVO values
 		// See also
 		// https://github.com/kubernetes/kubernetes/blob/fc31dae165f406026142f0dd9a98cada8474682a/pkg/client/leaderelection/leaderelection.go#L17
-		leaderelection.RunOrDie(leaderelection.LeaderElectionConfig{
+		leaderelection.RunOrDie(context.TODO(), leaderelection.LeaderElectionConfig{
 			Lock:          resLock,
 			LeaseDuration: leaderElectionLease,
 			RenewDeadline: leaderElectionLease * 2 / 3,
 			RetryPeriod:   leaderElectionLease / 3,
 			Callbacks: leaderelection.LeaderCallbacks{
-				OnStartedLeading: func(stop <-chan struct{}) {
+				OnStartedLeading: func(ctx context.Context) { // was: func(stop <-chan struct{})
 					glog.V(5).Info("started leading")
 					waitLeading <- struct{}{}
 				},

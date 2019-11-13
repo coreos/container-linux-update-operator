@@ -41,7 +41,7 @@ import:
 - package: github.com/godbus/dbus
   version: v4.0.0
 - package: github.com/gogo/protobuf
-  version: c0656edd0d9eab7c66d1eb0c568f9039345796f7
+  version: 5628607bb4c51c3157aacc3a50f0ab707582b805
   subpackages:
   - proto
   - sortkeys
@@ -55,12 +55,18 @@ import:
   version: bd3c8e81be01eef76d4b503f5e687d2d1354d2d9
   subpackages:
   - gomock
+- package: github.com/google/go-cmp
+  version: 2d0692c2e9617365a95b295612ac0d4415ba4627
+  subpackages:
+  - cmp
 - package: github.com/google/gofuzz
   version: 44d81051d367757e1c7c6a5a86423ece9afcf63c
+- package: github.com/hashicorp/golang-lru
+  version: 7f827b33c0f158ec5dfbba01bb0b14a4541fd81d
 - package: github.com/howeyc/gopass
   version: bf9dde6d0d2c004a008c27aaee91170c786f6db8
 - package: github.com/imdario/mergo
-  version: 6633656539c1639d9d78127b7d47c622b5d7b6dc
+  version: 1afb36080aec31e0d1528973ebe6721b191b0369
 - package: github.com/juju/ratelimit
   version: 5b9ff866471762aa2ab2dced63c9fb6f53921342
 - package: github.com/mailru/easyjson
@@ -112,9 +118,9 @@ import:
 - package: gopkg.in/inf.v0
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
 - package: gopkg.in/yaml.v2
-  version: 53feefa2559fb8dfa8d81baad31be332c97d6c77
+  version: f90ceb4f409096b60e2e9076b38b304b8246e5fa
 - package: k8s.io/apimachinery
-  version: 12d70001ef0c75fc5a26057ca73d3caf5e2cf682
+  version: a2eda9f80ab8a454a81bdde16d62a1afe5f931c0
   subpackages:
   - pkg/api/errors
   - pkg/api/meta
@@ -159,7 +165,7 @@ import:
   - third_party/forked/golang/json
   - third_party/forked/golang/reflect
 - package: k8s.io/client-go
-  version: c7ed6bc9c1c981e0f0bd09dc046c9b81ab855c24
+  version: bec269661e48cb1e5fbb0d037f356ffe9e9978a0
   subpackages:
   - discovery
   - kubernetes
@@ -243,13 +249,14 @@ import:
   - tools/leaderelection/resourcelock
   - tools/metrics
   - tools/record
+  - tools/watch
   - transport
   - util/cert
   - util/flowcontrol
   - util/homedir
   - util/integer
 - package: k8s.io/kubernetes
-  version: 1bc56825a2dff06f29663a024ee339c25e6e6280
+  version: c97fe5036ef3df2967d086711e6c0c405941e14b
   subpackages:
   - pkg/api
   - pkg/api/install
