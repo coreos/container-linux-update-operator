@@ -18,18 +18,23 @@ package parsers
 
 import (
 	"fmt"
+	//  Import the crypto sha256 algorithm for the docker image parser to work
+	_ "crypto/sha256"
+	//  Import the crypto/sha512 algorithm for the docker image parser to work with 384 and 512 sha hashes
+	_ "crypto/sha512"
 
 	dockerref "github.com/docker/distribution/reference"
 )
 
 const (
+	// DefaultImageTag is the default tag for docker image.
 	DefaultImageTag = "latest"
 )
 
 // ParseImageName parses a docker image string into three parts: repo, tag and digest.
 // If both tag and digest are empty, a default image tag will be returned.
 func ParseImageName(image string) (string, string, string, error) {
-	named, err := dockerref.ParseNamed(image)
+	named, err := dockerref.ParseNormalizedNamed(image)
 	if err != nil {
 		return "", "", "", fmt.Errorf("couldn't parse image name: %v", err)
 	}

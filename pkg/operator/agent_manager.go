@@ -6,7 +6,7 @@ import (
 	"github.com/blang/semver"
 	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
-	"k8s.io/api/extensions/v1beta1"
+	v1apps "k8s.io/api/apps/v1"
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
@@ -76,7 +76,7 @@ func (k *Kontroller) legacyLabeler() {
 // Furthermore, it's assumed that all future agent versions will be backwards
 // compatible, so if the agent's version is greater than ours, it's okay.
 func (k *Kontroller) runDaemonsetUpdate(agentImageRepo string) error {
-	agentDaemonsets, err := k.kc.ExtensionsV1beta1().DaemonSets(k.namespace).List(v1meta.ListOptions{
+	agentDaemonsets, err := k.kc.AppsV1().DaemonSets(k.namespace).List(v1meta.ListOptions{
 		LabelSelector: labels.SelectorFromSet(labels.Set(managedByOperatorLabels)).String(),
 	})
 	if err != nil {
@@ -121,7 +121,7 @@ func (k *Kontroller) runDaemonsetUpdate(agentImageRepo string) error {
 		// painful to do correctly. In addition, doing it correctly doesn't add too
 		// much value unless we have corresponding detection/rollback logic.
 		falseVal := false
-		err := k.kc.ExtensionsV1beta1().DaemonSets(k.namespace).Delete(agentDS.Name, &v1meta.DeleteOptions{
+		err := k.kc.AppsV1().DaemonSets(k.namespace).Delete(agentDS.Name, &v1meta.DeleteOptions{
 			OrphanDependents: &falseVal, // Cascading delete
 		})
 		if err != nil {
@@ -140,11 +140,11 @@ func (k *Kontroller) runDaemonsetUpdate(agentImageRepo string) error {
 }
 
 func (k *Kontroller) createAgentDamonset(agentImageRepo string) error {
-	_, err := k.kc.ExtensionsV1beta1().DaemonSets(k.namespace).Create(agentDaemonsetSpec(agentImageRepo))
+	_, err := k.kc.AppsV1().DaemonSets(k.namespace).Create(agentDaemonsetSpec(agentImageRepo))
 	return err
 }
 
-func agentDaemonsetSpec(repo string) *v1beta1.DaemonSet {
+func agentDaemonsetSpec(repo string) *v1apps.DaemonSet {
 	// Each agent daemonset includes the version of the agent in the selector.
 	// This ensures that the 'orphan adoption' logic doesn't kick in for these
 	// daemonsets.
@@ -154,7 +154,7 @@ func agentDaemonsetSpec(repo string) *v1beta1.DaemonSet {
 	}
 	versionedSelector[constants.AgentVersion] = version.Version
 
-	return &v1beta1.DaemonSet{
+	return &v1apps.DaemonSet{
 		ObjectMeta: v1meta.ObjectMeta{
 			Name:   daemonsetName,
 			Labels: managedByOperatorLabels,
@@ -162,7 +162,7 @@ func agentDaemonsetSpec(repo string) *v1beta1.DaemonSet {
 				constants.AgentVersion: version.Version,
 			},
 		},
-		Spec: v1beta1.DaemonSetSpec{
+		Spec: v1apps.DaemonSetSpec{
 			Selector: &v1meta.LabelSelector{MatchLabels: versionedSelector},
 			Template: v1.PodTemplateSpec{
 				ObjectMeta: v1meta.ObjectMeta{

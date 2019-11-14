@@ -48,7 +48,8 @@ type PolicyRule struct {
 	// APIGroups is the name of the APIGroup that contains the resources.
 	// If multiple API groups are specified, any action requested against one of the enumerated resources in any API group will be allowed.
 	APIGroups []string
-	// Resources is a list of resources this rule applies to.  ResourceAll represents all resources.
+	// Resources is a list of resources this rule applies to.  '*' represents all resources in the specified apiGroups.
+	// '*/foo' represents the subresource 'foo' for all resources in the specified apiGroups.
 	Resources []string
 	// ResourceNames is an optional white list of names that the rule applies to.  An empty set means that everything is allowed.
 	ResourceNames []string
@@ -87,7 +88,6 @@ type RoleRef struct {
 	Name string
 }
 
-// +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Role is a namespaced, logical grouping of PolicyRules that can be referenced as a unit by a RoleBinding.
@@ -100,7 +100,6 @@ type Role struct {
 	Rules []PolicyRule
 }
 
-// +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // RoleBinding references a role, but does not contain it.  It can reference a Role in the same namespace or a ClusterRole in the global namespace.
@@ -142,8 +141,6 @@ type RoleList struct {
 	Items []Role
 }
 
-// +genclient
-// +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // ClusterRole is a cluster level, logical grouping of PolicyRules that can be referenced as a unit by a RoleBinding or ClusterRoleBinding.
@@ -154,10 +151,20 @@ type ClusterRole struct {
 
 	// Rules holds all the PolicyRules for this ClusterRole
 	Rules []PolicyRule
+
+	// AggregationRule is an optional field that describes how to build the Rules for this ClusterRole.
+	// If AggregationRule is set, then the Rules are controller managed and direct changes to Rules will be
+	// stomped by the controller.
+	AggregationRule *AggregationRule
 }
 
-// +genclient
-// +genclient:nonNamespaced
+// AggregationRule describes how to locate ClusterRoles to aggregate into the ClusterRole
+type AggregationRule struct {
+	// ClusterRoleSelectors holds a list of selectors which will be used to find ClusterRoles and create the rules.
+	// If any of the selectors match, then the ClusterRole's permissions will be added
+	ClusterRoleSelectors []metav1.LabelSelector
+}
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // ClusterRoleBinding references a ClusterRole, but not contain it.  It can reference a ClusterRole in the global namespace,

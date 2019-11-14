@@ -71,7 +71,7 @@ func getOwnerDaemonset(kc kubernetes.Interface, pod v1.Pod) (interface{}, error)
 func getDaemonsetController(kc kubernetes.Interface, namespace string, controllerRef *v1meta.OwnerReference) (interface{}, error) {
 	switch controllerRef.Kind {
 	case "DaemonSet":
-		return kc.ExtensionsV1beta1().DaemonSets(namespace).Get(controllerRef.Name, v1meta.GetOptions{})
+		return kc.AppsV1().DaemonSets(namespace).Get(controllerRef.Name, v1meta.GetOptions{})
 	}
 	return nil, fmt.Errorf("Unknown controller kind %q", controllerRef.Kind)
 }

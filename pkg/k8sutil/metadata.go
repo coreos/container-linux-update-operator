@@ -12,6 +12,7 @@ import (
 	v1meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/watch"
+	watchtools "k8s.io/client-go/tools/watch"
 	v1core "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
@@ -23,7 +24,7 @@ const (
 
 // NodeAnnotationCondition returns a condition function that succeeds when a
 // node being watched has an annotation of key equal to value.
-func NodeAnnotationCondition(selector fields.Selector) watch.ConditionFunc {
+func NodeAnnotationCondition(selector fields.Selector) watchtools.ConditionFunc {
 	return func(event watch.Event) (bool, error) {
 		switch event.Type {
 		case watch.Modified:
